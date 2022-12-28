@@ -27,7 +27,7 @@ def next_seed(args):
         args.seed = random.randint(0, 2**32 - 1)
     return args.seed
 
-def render_image_batch(args, prompts, root):
+def render_image_batch(args, prompts, root, window):
     args.prompts = {k: f"{v:05d}" for v, k in enumerate(prompts)}
     
     # create output folder for the batch
@@ -84,13 +84,16 @@ def render_image_batch(args, prompts, root):
                     if args.make_grid:
                         all_images.append(T.functional.pil_to_tensor(image))
                     if args.save_samples:
-                        if args.filename_format == "{timestring}_{index}_{prompt}.png":
-                            filename = f"{args.timestring}_{index:05}_{sanitize(prompt)[:160]}.png"
-                        else:
-                            filename = f"{args.timestring}_{index:05}_{args.seed}.png"
+                        match args.filename_format:
+                            case "{timestring}_{index}_{prompt}.png":
+                                filename = f"{args.timestring}_{index:05}_{sanitize(prompt)[:160]}.png"
+                            case "{seed}_{index}_{prompt}.png":
+                                filename = f"{args.seed}_{index:05}_{sanitize(prompt)[:160]}.png"
+                            case "{timestring}_{index}_{seed}.png":
+                                filename = f"{args.timestring}_{index:05}_{args.seed}.png"
                         image.save(os.path.join(args.outdir, filename))
                     if args.display_samples:
-                        display.display(image)
+                        window['-IMAGE-'].update(os.path.join(args.outdir, filename), size=(512, 512))
                     index += 1
                 args.seed = next_seed(args)
 
