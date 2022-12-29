@@ -108,7 +108,7 @@ def render_image_batch(args, prompts, root, window):
             display.display(grid_image)
 
 
-def render_animation(args, anim_args, animation_prompts, root):
+def render_animation(args, anim_args, animation_prompts, root, window):
     # animations use key framed prompts
     args.prompts = animation_prompts
 
@@ -327,13 +327,11 @@ def render_animation(args, anim_args, animation_prompts, root):
                 depth = depth_model.predict(sample_to_cv2(sample), anim_args)
                 depth_model.save(os.path.join(args.outdir, f"{args.timestring}_depth_{frame_idx:05}.png"), depth)
             frame_idx += 1
-
-        display.clear_output(wait=True)
-        display.display(image)
+            window['-IMAGE-'].update(os.path.join(args.outdir, filename), size=(512, 512))
 
         args.seed = next_seed(args)
 
-def render_input_video(args, anim_args, animation_prompts, root):
+def render_input_video(args, anim_args, animation_prompts, root, window):
     # create a folder for the video input frames to live in
     video_in_frame_path = os.path.join(args.outdir, 'inputframes') 
     os.makedirs(video_in_frame_path, exist_ok=True)
@@ -358,9 +356,9 @@ def render_input_video(args, anim_args, animation_prompts, root):
         args.use_mask = True
         args.overlay_mask = True
 
-    render_animation(args, anim_args, animation_prompts, root)
+    render_animation(args, anim_args, animation_prompts, root, window)
 
-def render_interpolation(args, anim_args, animation_prompts, root):
+def render_interpolation(args, anim_args, animation_prompts, root, window):
     # animations use key framed prompts
     args.prompts = animation_prompts
 
@@ -422,7 +420,7 @@ def render_interpolation(args, anim_args, animation_prompts, root):
                 frame_idx += 1
 
                 display.clear_output(wait=True)
-                display.display(image)
+                window['-IMAGE-'].update(os.path.join(args.outdir, filename), size=(512, 512))
 
                 args.seed = next_seed(args)
 
@@ -443,7 +441,7 @@ def render_interpolation(args, anim_args, animation_prompts, root):
                 frame_idx += 1
 
                 display.clear_output(wait=True)
-                display.display(image)
+                window['-IMAGE-'].update(os.path.join(args.outdir, filename), size=(512, 512))
 
                 args.seed = next_seed(args)
 
@@ -455,7 +453,7 @@ def render_interpolation(args, anim_args, animation_prompts, root):
     image.save(os.path.join(args.outdir, filename))
 
     display.clear_output(wait=True)
-    display.display(image)
+    window['-IMAGE-'].update(os.path.join(args.outdir, filename), size=(512, 512))
     args.seed = next_seed(args)
 
     #clear init_c
