@@ -18,6 +18,7 @@ from .animation import DeformAnimKeys, sample_from_cv2, sample_to_cv2, anim_fram
 from .depth import DepthModel
 from .colors import maintain_colors
 from .load_images import prepare_overlay_mask
+from gui.gui_interface import gui_display_img
 
 try:
     from numpngw import write_png
@@ -41,7 +42,7 @@ def convert_image_to_8bpc(image, bit_depth_output):
     return image
 
 # This function saves the image to file, depending on bitrate. At 8bpc PIL saves png8 images. At 16bpc, numpngw saves png16 images. At 32 bpc, cv2 saves EXR images (and optionally tifffile saves 32bpc tiffs).
-def save_8_16_or_32bpc_image(image, outdir, filename, bit_depth_output, window): 
+def save_8_16_or_32bpc_image(image, outdir, filename, bit_depth_output): 
     if bit_depth_output == 8: 
         image.save(os.path.join(outdir, filename))
     elif bit_depth_output == 32:
@@ -49,7 +50,7 @@ def save_8_16_or_32bpc_image(image, outdir, filename, bit_depth_output, window):
         cv2.imwrite(os.path.join(outdir, filename).replace(".png", ".exr"), cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
     else:
         write_png(os.path.join(outdir, filename), image)
-    window['-IMAGE-'].update(os.path.join(outdir, filename), size=(512, 512))
+    gui_display_img(os.path.join(outdir, filename))
 
 def next_seed(args):
     if args.seed_behavior == 'iter':
@@ -76,7 +77,7 @@ def next_seed(args):
         args.seed = random.randint(0, 2**32 - 1)
     return args.seed
 
-def render_image_batch(args, prompts, root, window):
+def render_image_batch(args, prompts, root):
     args.prompts = {k: f"{v:05d}" for v, k in enumerate(prompts)}
     
     # create output folder for the batch
@@ -137,7 +138,7 @@ def render_image_batch(args, prompts, root, window):
                             filename = f"{args.timestring}_{index:05}_{sanitize(prompt)[:160]}.png"
                         else:
                             filename = f"{args.timestring}_{index:05}_{args.seed}.png"
-                        save_8_16_or_32bpc_image(image, args.outdir, filename, args.bit_depth_output, window)
+                        save_8_16_or_32bpc_image(image, args.outdir, filename, args.bit_depth_output)
                     if args.display_samples:
                         if args.bit_depth_output != 8:
                             image = convert_image_to_8bpc(image, args.bit_depth_output)
@@ -168,7 +169,7 @@ def unsharp_mask(img, kernel_size=(5, 5), sigma=1.0, amount=1.0, threshold=0):
     return sharpened
 
 
-def render_animation(args, anim_args, animation_prompts, root, window):
+def render_animation(args, anim_args, animation_prompts, root):
     # handle hybrid video generation
     if anim_args.animation_mode in ['2D','3D']:
         if anim_args.hybrid_video_composite or anim_args.hybrid_video_motion in ['Affine', 'Perspective', 'Optical Flow']:
@@ -433,7 +434,7 @@ def render_animation(args, anim_args, animation_prompts, root, window):
         else:    
             filename = f"{args.timestring}_{frame_idx:05}.png"
             # Save image to 8bpc or 16bpc
-            save_8_16_or_32bpc_image(image, args.outdir, filename, args.bit_depth_output, window)
+            save_8_16_or_32bpc_image(image, args.outdir, filename, args.bit_depth_output)
             if anim_args.save_depth_maps:
                 depth = depth_model.predict(sample_to_cv2(sample), anim_args)
                 depth_model.save(os.path.join(args.outdir, f"{args.timestring}_depth_{frame_idx:05}.png"), depth, args.bit_depth_output)
@@ -448,7 +449,7 @@ def render_animation(args, anim_args, animation_prompts, root, window):
 
         args.seed = next_seed(args)
 
-def render_input_video(args, anim_args, animation_prompts, root, window):
+def render_input_video(args, anim_args, animation_prompts, root):
     # create a folder for the video input frames to live in
     video_in_frame_path = os.path.join(args.outdir, 'inputframes') 
     os.makedirs(video_in_frame_path, exist_ok=True)
@@ -473,9 +474,9 @@ def render_input_video(args, anim_args, animation_prompts, root, window):
         args.use_mask = True
         args.overlay_mask = True
 
-    render_animation(args, anim_args, animation_prompts, root, window)
+    render_animation(args, anim_args, animation_prompts, root)
 
-def render_interpolation(args, anim_args, animation_prompts, root, window):
+def render_interpolation(args, anim_args, animation_prompts, root):
     # animations use key framed prompts
     args.prompts = animation_prompts
 
@@ -538,7 +539,7 @@ def render_interpolation(args, anim_args, animation_prompts, root, window):
 
                 filename = f"{args.timestring}_{frame_idx:05}.png"
                 # Save image to 8bpc or 16bpc
-                save_8_16_or_32bpc_image(image, args.outdir, filename, args.bit_depth_output, window)
+                save_8_16_or_32bpc_image(image, args.outdir, filename, args.bit_depth_output)
                 frame_idx += 1
 
                 # Convert image to 8bpc to display
@@ -563,7 +564,7 @@ def render_interpolation(args, anim_args, animation_prompts, root, window):
                 image = results[0]
 
                 filename = f"{args.timestring}_{frame_idx:05}.png"
-                save_8_16_or_32bpc_image(image, args.outdir, filename, args.bit_depth_output, window)
+                save_8_16_or_32bpc_image(image, args.outdir, filename, args.bit_depth_output)
                 frame_idx += 1
 
                 # Convert image to 8bpc to display
@@ -580,7 +581,7 @@ def render_interpolation(args, anim_args, animation_prompts, root, window):
     results = generate(args, root)
     image = results[0]
     filename = f"{args.timestring}_{frame_idx:05}.png"
-    save_8_16_or_32bpc_image(image, args.outdir, filename, args.bit_depth_output, window)
+    save_8_16_or_32bpc_image(image, args.outdir, filename, args.bit_depth_output)
 
     # Convert image to 8bpc to display
     if args.bit_depth_output != 8: 

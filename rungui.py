@@ -5,6 +5,7 @@ from helpers.save_images import get_output_folder
 from threading import Thread
 import pickle
 import clip
+import gui.gui_interface as gui
 from base64 import b64encode
 
 
@@ -18,7 +19,7 @@ from base64 import b64encode
 
 sys.path.extend(['src'])
 
-app_log = False
+app_log = True
 
 from helpers.render import render_animation, render_input_video, render_image_batch, render_interpolation
 from helpers.model_load import make_linear_decode, load_model, get_model_output_paths
@@ -293,7 +294,7 @@ def do_render(args):
     if suffix != '':
         prompts = [prompt + ', ' + suffix for prompt in prompts]
     # DISPLAY IMAGE IN deforum/helpers.render.py render_image_batch
-    render_image_batch(args, prompts, root, window)
+    render_image_batch(args, prompts, root)
     set_ready(True)
     return
 
@@ -314,11 +315,11 @@ def do_video_render(args, anim_args):
     torch.cuda.empty_cache()  
     match anim_args.animation_mode:
         case '2D' | '3D':
-            render_animation(args, anim_args, prompt_dict, root, window)
+            render_animation(args, anim_args, prompt_dict, root)
         case 'Video Input':
-            render_input_video(args, anim_args, prompt_dict, root, window)
+            render_input_video(args, anim_args, prompt_dict, root)
         case 'Interpolation':
-            render_interpolation(args, anim_args, prompt_dict, root, window)
+            render_interpolation(args, anim_args, prompt_dict, root)
     create_video(args, anim_args)
     if values['-REMOVE_FRAMES_AFTER-']:
         for file in os.listdir(args.outdir):
@@ -616,6 +617,8 @@ layout = [
     ]
   
 window = sg.Window('Deforum Wrapper', layout, resizable=True, finalize=True, size=(720, 920), font=("Calibri", 11), enable_close_attempted_event=True)
+gui.guiwindow = window
+gui.show_login_popup()
 window.maximize()
 
 # ****************************************************************************

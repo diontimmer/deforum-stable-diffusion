@@ -2,6 +2,7 @@ import os
 import torch
 from tqdm import tqdm
 import requests
+from gui.gui_interface import guiwindow, show_login_popup
 
 #from memory_profiler import profile
 
@@ -37,9 +38,13 @@ def download_model(model_map,root):
     if model_map[root.model_checkpoint]['requires_login']:
         print("This model requires an authentication token")
         print("Please ensure you have accepted the terms of service before continuing.")
-
-        username = input("[What is your huggingface username?]: ")
-        token = input("[What is your huggingface token?]: ")
+        if guiwindow:
+            popup_vals = show_login_popup()
+            username = popup_vals[0]
+            token = popup_vals[1]
+        else:
+            username = input("[What is your huggingface username?]: ")
+            token = input("[What is your huggingface token?]: ")
 
         _, path = url.split("https://")
 
