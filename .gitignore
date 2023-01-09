@@ -16,3 +16,4 @@ outputs/
 # Model files
 configs/
 models/
+saved_settings.pickle
