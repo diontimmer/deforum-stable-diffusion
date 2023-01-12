@@ -9,7 +9,7 @@ def show_login_popup():
               [sg.Button('Login')]]
 
     # Create the window and show it
-    window = sg.Window('Login').Layout(layout)
+    window = sg.Window('Login', layout=layout, icon='gui/favicon.ico')
     button, values = window.Read()
 
     # Check which button was clicked and either print the values or a message
