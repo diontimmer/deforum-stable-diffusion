@@ -16,4 +16,9 @@ outputs/
 # Model files
 configs/
 models/
+
+# Settings
 saved_settings.pickle
+
+# Script
+launch.bat

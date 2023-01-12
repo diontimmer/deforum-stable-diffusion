@@ -9,15 +9,6 @@ import gui.gui_interface as gui
 from gui.gui_const import *
 from base64 import b64encode
 
-
-# def new_print(*args, **kwargs):
-
-#     pass
-
-# print = new_print
-
-# setup env
-
 sys.path.extend(['src'])
 
 app_log = True
@@ -181,35 +172,35 @@ def DeforumArgs(overrides):
     # Overlay the masked image at the end of the generation so it does not get degraded by encoding and decoding
     overlay_mask = overrides['overlay_mask'] 
     # Blur edges of final overlay mask, if used. Minimum = 0 (no blur)
-    mask_overlay_blur = int(overrides['mask_overlay_blur'])
+    mask_overlay_blur = float(overrides['mask_overlay_blur'])
 
     # **Exposure/Contrast Conditional Settings**
 
-    mean_scale = float(overrides['mean_scale']) 
-    var_scale = float(overrides['var_scale']) 
-    exposure_scale = float(overrides['exposure_scale']) 
+    mean_scale = int(overrides['mean_scale']) 
+    var_scale = int(overrides['var_scale']) 
+    exposure_scale = int(overrides['exposure_scale']) 
     exposure_target = float(overrides['exposure_target'])
 
     # **Color Match Conditional Settings**
 
-    colormatch_scale = overrides['colormatch_scale'] 
+    colormatch_scale = int(overrides['colormatch_scale']) 
     colormatch_image = overrides['colormatch_image']
-    colormatch_n_colors = overrides['colormatch_n_colors'] 
-    ignore_sat_weight = overrides['ignore_sat_weight'] 
+    colormatch_n_colors = int(overrides['colormatch_n_colors']) 
+    ignore_sat_weight = int(overrides['ignore_sat_weight']) 
 
     # **CLIP\Aesthetics Conditional Settings**
 
     clip_name = overrides['clip_name']
-    clip_scale = overrides['clip_scale'] 
-    aesthetics_scale = overrides['aesthetics_scale'] 
-    cutn = overrides['cutn'] 
-    cut_pow = overrides['cut_pow']
+    clip_scale = int(overrides['clip_scale']) 
+    aesthetics_scale = int(overrides['aesthetics_scale']) 
+    cutn = int(overrides['cutn']) 
+    cut_pow = float(overrides['cut_pow'])
 
     # **Other Conditional Settings**
 
-    init_mse_scale = overrides['init_mse_scale'] 
+    init_mse_scale = int(overrides['init_mse_scale']) 
     init_mse_image = overrides['init_mse_image']
-    blue_scale = overrides['blue_scale']
+    blue_scale = int(overrides['blue_scale'])
 
     # **Conditional Gradient Settings**
 
@@ -217,10 +208,10 @@ def DeforumArgs(overrides):
     gradient_add_to = overrides['gradient_add_to']  # ["cond", "uncond", "both"]
     decode_method = overrides['decode_method']  # ["autoencoder","linear"]
     grad_threshold_type = overrides['grad_threshold_type']  # ["dynamic", "static", "mean", "schedule"]
-    clamp_grad_threshold = overrides['clamp_grad_threshold'] 
-    clamp_start = overrides['clamp_start']
-    clamp_stop = overrides['clamp_stop']
-    grad_inject_timing = eval(overrides['grad_inject_timing'])
+    clamp_grad_threshold = float(overrides['clamp_grad_threshold']) 
+    clamp_start = float(overrides['clamp_start'])
+    clamp_stop = float(overrides['clamp_stop'])
+    grad_inject_timing = [int(x) for x in overrides['grad_inject_timing'].strip('[]').split(',')]
 
     # **Speed vs VRAM Settings**
 
@@ -579,15 +570,15 @@ opt_gen_prompt = sg.Frame(title='Prompt Weight Settings', layout=[
     ], vertical_alignment='top')
 
 opt_gen_exposure = sg.Frame(title='Exposure/Contrast Settings', layout=[
-    [sg.Text('Mean Scale: '), sg.Input('0.0', key='-MEAN_SCALE-', size=(5, 1))],
-    [sg.Text('Var Scale: '), sg.Input('0.0', key='-VAR_SCALE-', size=(5, 1))],  
-    [sg.Text('Exposure Scale: '), sg.Input('0.0', key='-EXPOSURE_SCALE-', size=(5, 1))],
+    [sg.Text('Mean Scale: '), sg.Input('0', key='-MEAN_SCALE-', size=(5, 1))],
+    [sg.Text('Var Scale: '), sg.Input('0', key='-VAR_SCALE-', size=(5, 1))],  
+    [sg.Text('Exposure Scale: '), sg.Input('0', key='-EXPOSURE_SCALE-', size=(5, 1))],
     [sg.Text('Exposure Target: '), sg.Input('0.5', key='-EXPOSURE_TARGET-', size=(5, 1))],     
     ], vertical_alignment='top')
 
 opt_gen_colormatch = sg.Frame(title='Colormatch Settings', layout=[
     [sg.Text('Colormatch Scale: '), sg.Input('0', key='-COLORMATCH_SCALE-', size=(5, 1))],
-    [sg.Text('Colormatch Image: '), sg.Input(key='-COLORMATCH_IMAGE-', size=(50, 1)), sg.FileBrowse(file_types=(("Image Files", "*.png *.jpg *.jpeg"),))], 
+    [sg.Text('Colormatch Image: '), sg.Input('https://www.saasdesign.io/wp-content/uploads/2021/02/palette-3-min-980x588.png', key='-COLORMATCH_IMAGE-', size=(50, 1)), sg.FileBrowse(file_types=(("Image Files", "*.png *.jpg *.jpeg"),))], 
     [sg.Text('Colormatch N Colors: '), sg.Input('4', key='-COLORMATCH_N_COLORS-', size=(5, 1))],
     [sg.Text('Ignore Sat Weight: '), sg.Input('0', key='-IGNORE_SAT_WEIGHT-', size=(5, 1))],     
     ], vertical_alignment='top')
@@ -602,7 +593,7 @@ opt_gen_clip = sg.Frame(title='Clip/Aesthetics Settings', layout=[
 
 opt_gen_other = sg.Frame(title='Other Conditional Settings', layout=[
     [sg.Text('Init MSE Scale: '), sg.Input('0', key='-INIT_MSE_SCALE-', size=(5, 1))],   
-    [sg.Text('Init MSE Image: '), sg.Input(key='-INIT_MSE_IMAGE-', size=(50, 1)), sg.FileBrowse(file_types=(("Image Files", "*.png *.jpg *.jpeg"),))], 
+    [sg.Text('Init MSE Image: '), sg.Input('https://cdn.pixabay.com/photo/2022/07/30/13/10/green-longhorn-beetle-7353749_1280.jpg', key='-INIT_MSE_IMAGE-', size=(50, 1)), sg.FileBrowse(file_types=(("Image Files", "*.png *.jpg *.jpeg"),))], 
     [sg.Text('Blue Scale: '), sg.Input('0', key='-BLUE_SCALE-', size=(5, 1))],      
     ], vertical_alignment='top')
 
@@ -614,7 +605,7 @@ opt_gen_gradient = sg.Frame(title='Conditional Gradient Settings', layout=[
     [sg.Text('Clamp Gradient Threshold: '), sg.Input('0.2', key='-CLAMP_GRAD_THRESHOLD-', size=(5, 1))],
     [sg.Text('Clamp Start: '), sg.Input('0.2', key='-CLAMP_START-', size=(5, 1))],
     [sg.Text('Clamp Stop: '), sg.Input('0.01', key='-CLAMP_STOP-', size=(5, 1))],
-    [sg.Text('Gradient Inject Timing: '), sg.Input('list(range(1,10))', key='-GRAD_INJECT_TIMING-', size=(20, 1))],    
+    [sg.Text('Gradient Inject Timing: '), sg.Input('[1, 2, 3, 4, 5, 6, 7, 8, 9]', key='-GRAD_INJECT_TIMING-', size=(20, 1))],    
     ], vertical_alignment='top')
 
 opt_gen_speed = sg.Frame(title='Conditional Gradient Settings', layout=[
@@ -748,7 +739,7 @@ prompt_box = sg.Column([
     [sg.Text('Prompts: (Separated by new line) '), sg.Text('Suffix: '), sg.Input('', key='-SUFFIX-', expand_x=True)],
     [sg.Multiline(expand_x=True, expand_y=False, key='-PROMPTS-', size=(0,20))],
     [sg.Text('Output Path: '), sg.Input(f'{os.path.dirname(os.path.abspath(__file__))}\\output', key='-OUTPUT_PATH-', size=(80, 1)), sg.FileBrowse()],
-    [sg.Button('Render', key='-RENDER-'), sg.Button('Reload Model', key='-RELOAD-'), sg.Button('Cancel Render', key='-CANCEL-')],
+    [sg.Button('Render', key='-RENDER-'), sg.Button('Reload Model', key='-RELOAD-')],
     [log_ml],
     ], vertical_alignment='top', expand_x=True, expand_y=True)
 
@@ -881,7 +872,7 @@ def load_settings(file):
         window['-CLAMP_GRAD_THRESHOLD-'].update(value=settings['args']['clamp_grad_threshold'])
         window['-CLAMP_START-'].update(value=settings['args']['clamp_start'])
         window['-CLAMP_STOP-'].update(value=settings['args']['clamp_stop'])
-        window['-GRAD_INJECT_TIMING-'].update(value=settings['args']['grad_inject_timing'])
+        window['-GRAD_INJECT_TIMING-'].update(value=f'[{", ".join(str(x) for x in settings["args"]["grad_inject_timing"])}]')
 
         # speed vs vram
         window['-COND_UNCOND_SYNC-'].update(value=settings['args']['cond_uncond_sync'])

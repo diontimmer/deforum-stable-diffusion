@@ -39,6 +39,7 @@ def convert_image_to_8bpc(image, bit_depth_output):
     elif bit_depth_output == 32:
         image = np.clip(image * 256, 0, 255) # Clip values below 0 and above 255 (but those values ARE PRESENT in the EXRs)
         image = Image.fromarray(image.astype('uint8'))
+    gui_display_img(image)
     return image
 
 # This function saves the image to file, depending on bitrate. At 8bpc PIL saves png8 images. At 16bpc, numpngw saves png16 images. At 32 bpc, cv2 saves EXR images (and optionally tifffile saves 32bpc tiffs).
