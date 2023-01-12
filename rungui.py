@@ -6,6 +6,7 @@ from threading import Thread
 import pickle
 import clip
 import gui.gui_interface as gui
+from gui.gui_const import *
 from base64 import b64encode
 
 
@@ -38,11 +39,13 @@ def Root(modelpath='', model_config_override='', outputpath='outputs'):
     models_path_gdrive = "/content/drive/MyDrive/AI/models"
     output_path_gdrive = "/content/drive/MyDrive/AI/StableDiffusion"
     model_config = model_config_override
-    model_checkpoint = "custom"
+    # get filename from modelpath
+    model_checkpoint = "custom" if os.path.basename(modelpath) not in model_map else os.path.basename(modelpath)
     custom_config_path = ""
     custom_checkpoint_path = modelpath
     half_precision = True
     return locals()
+
 
 def DeforumAnimArgs(overrides):
 
@@ -68,17 +71,17 @@ def DeforumAnimArgs(overrides):
     noise_schedule = overrides['noise_schedule']
     strength_schedule = overrides['strength_schedule']
     contrast_schedule = overrides['contrast_schedule']
-    hybrid_video_comp_alpha_schedule = "0:(1)" #@param {type:"string"}
-    hybrid_video_comp_mask_blend_alpha_schedule = "0:(0.5)" #@param {type:"string"}
-    hybrid_video_comp_mask_contrast_schedule = "0:(1)" #@param {type:"string"}
-    hybrid_video_comp_mask_auto_contrast_cutoff_high_schedule =  "0:(100)" #@param {type:"string"}
-    hybrid_video_comp_mask_auto_contrast_cutoff_low_schedule =  "0:(0)" #@param {type:"string"}
+    hybrid_video_comp_alpha_schedule = overrides['hybrid_video_comp_alpha_schedule']
+    hybrid_video_comp_mask_blend_alpha_schedule = overrides['hybrid_video_comp_mask_blend_alpha_schedule']
+    hybrid_video_comp_mask_contrast_schedule = overrides['hybrid_video_comp_mask_contrast_schedule']
+    hybrid_video_comp_mask_auto_contrast_cutoff_high_schedule = overrides['hybrid_video_comp_mask_auto_contrast_cutoff_high_schedule']
+    hybrid_video_comp_mask_auto_contrast_cutoff_low_schedule = overrides['hybrid_video_comp_mask_auto_contrast_cutoff_low_schedule']
 
     #@markdown ####**Unsharp mask (anti-blur) Parameters:**
-    kernel_schedule = "0: (5)"#@param {type:"string"}
-    sigma_schedule = "0: (1.0)"#@param {type:"string"}
-    amount_schedule = "0: (0.2)"#@param {type:"string"}
-    threshold_schedule = "0: (0.0)"#@param {type:"string"}
+    kernel_schedule = overrides['kernel_schedule']
+    sigma_schedule = overrides['sigma_schedule']
+    amount_schedule = overrides['amount_schedule']
+    threshold_schedule = overrides['threshold_schedule']
 
     #@markdown ####**Coherence:**
     color_coherence = overrides['color_coherence']
@@ -87,12 +90,12 @@ def DeforumAnimArgs(overrides):
     #@markdown ####**3D Depth Warping:**
     use_depth_warping = overrides['use_depth_warping']
     midas_weight = float(overrides['midas_weight'])
-    near_plane = 200
-    far_plane = 10000
+    near_plane = int(overrides['near_plane'])
+    far_plane = int(overrides['far_plane'])
     fov = float(overrides['fov'])
     padding_mode = overrides['padding_mode']
     sampling_mode = overrides['sampling_mode']
-    save_depth_maps = False
+    save_depth_maps = overrides['save_depth_maps'] #b
 
     #@markdown ####**Video Input:**
     video_init_path = overrides['video_init_path']
@@ -128,7 +131,7 @@ def DeforumArgs(overrides):
     W = int(overrides['W'])
     H = int(overrides['H'])
     W, H = map(lambda x: x - x % 64, (W, H))  # resize to integer multiple of 64
-    bit_depth_output = 8 #@param [8, 16, 32] {type:"raw"}
+    bit_depth_output = overrides['bit_depth_output']
 
     # **Sampling Settings**
     seed = int(overrides['seed'])
@@ -138,17 +141,17 @@ def DeforumArgs(overrides):
     ddim_eta = float(overrides['ddim_eta'])
     dynamic_threshold = None
     static_threshold = None   
-    save_samples = True
-    save_settings = True
+    save_samples = overrides['save_samples']
+    save_settings = overrides['save_settings']
     display_samples = True
-    save_sample_per_step = False
-    show_sample_per_step = False
+    save_sample_per_step = overrides['save_sample_per_step']
+    show_sample_per_step = overrides['show_sample_per_step']
 
     # **Prompt Settings**
 
-    prompt_weighting = True 
-    normalize_prompt_weights = True 
-    log_weighted_subprompts = False 
+    prompt_weighting = overrides['prompt_weighting'] 
+    normalize_prompt_weights = overrides['normalize_prompt_weights'] 
+    log_weighted_subprompts = overrides['log_weighted_subprompts'] 
 
     # **Batch Settings**
 
@@ -156,9 +159,9 @@ def DeforumArgs(overrides):
     batch_name = overrides['batch_name']
     filename_format = "{seed}_{index}_{prompt}.png"
     seed_behavior = overrides['seed_behavior']
-    seed_iter_N = 1 #@param {type:'integer'}
-    make_grid = False
-    grid_rows = 2
+    seed_iter_N = int(overrides['seed_iter_N']) #@param {type:'integer'}
+    make_grid = overrides['make_grid']
+    grid_rows = int(overrides['grid_rows'])
     outdir = get_output_folder(root.output_path, batch_name)
 
     # **Init Settings**
@@ -182,46 +185,46 @@ def DeforumArgs(overrides):
 
     # **Exposure/Contrast Conditional Settings**
 
-    mean_scale = 0 
-    var_scale = 0 
-    exposure_scale = 0 
-    exposure_target = 0.5 
+    mean_scale = float(overrides['mean_scale']) 
+    var_scale = float(overrides['var_scale']) 
+    exposure_scale = float(overrides['exposure_scale']) 
+    exposure_target = float(overrides['exposure_target'])
 
     # **Color Match Conditional Settings**
 
-    colormatch_scale = 0 
-    colormatch_image = "https://www.saasdesign.io/wp-content/uploads/2021/02/palette-3-min-980x588.png"
-    colormatch_n_colors = 4 
-    ignore_sat_weight = 0 
+    colormatch_scale = overrides['colormatch_scale'] 
+    colormatch_image = overrides['colormatch_image']
+    colormatch_n_colors = overrides['colormatch_n_colors'] 
+    ignore_sat_weight = overrides['ignore_sat_weight'] 
 
     # **CLIP\Aesthetics Conditional Settings**
 
-    clip_name = 'ViT-L/14'  # ['ViT-L/14', 'ViT-L/14@336px', 'ViT-B/16', 'ViT-B/32']
-    clip_scale = 0 
-    aesthetics_scale = 0 
-    cutn = 1 
-    cut_pow = 0.0001 
+    clip_name = overrides['clip_name']
+    clip_scale = overrides['clip_scale'] 
+    aesthetics_scale = overrides['aesthetics_scale'] 
+    cutn = overrides['cutn'] 
+    cut_pow = overrides['cut_pow']
 
     # **Other Conditional Settings**
 
-    init_mse_scale = 0 
-    init_mse_image = "https://cdn.pixabay.com/photo/2022/07/30/13/10/green-longhorn-beetle-7353749_1280.jpg"
-    blue_scale = 0
+    init_mse_scale = overrides['init_mse_scale'] 
+    init_mse_image = overrides['init_mse_image']
+    blue_scale = overrides['blue_scale']
 
     # **Conditional Gradient Settings**
 
-    gradient_wrt = 'x0_pred'  # ["x", "x0_pred"]
-    gradient_add_to = 'both'  # ["cond", "uncond", "both"]
-    decode_method = 'linear'  # ["autoencoder","linear"]
-    grad_threshold_type = 'dynamic'  # ["dynamic", "static", "mean", "schedule"]
-    clamp_grad_threshold = 0.2 
-    clamp_start = 0.2
-    clamp_stop = 0.01
-    grad_inject_timing = list(range(1, 10))
+    gradient_wrt = overrides['gradient_wrt']  # ["x", "x0_pred"]
+    gradient_add_to = overrides['gradient_add_to']  # ["cond", "uncond", "both"]
+    decode_method = overrides['decode_method']  # ["autoencoder","linear"]
+    grad_threshold_type = overrides['grad_threshold_type']  # ["dynamic", "static", "mean", "schedule"]
+    clamp_grad_threshold = overrides['clamp_grad_threshold'] 
+    clamp_start = overrides['clamp_start']
+    clamp_stop = overrides['clamp_stop']
+    grad_inject_timing = eval(overrides['grad_inject_timing'])
 
     # **Speed vs VRAM Settings**
 
-    cond_uncond_sync = True 
+    cond_uncond_sync = overrides['cond_uncond_sync'] 
     n_samples = 1  # doesnt do anything
     precision = 'autocast' 
     C = 4
@@ -247,9 +250,9 @@ def load_root_model(modelname, modelconfig, outputpath):
         pass
     global loaded_model_path
     loaded_model_path = f'models/{modelname}'
-    if not os.path.isfile(loaded_model_path):
-        print(f'Could not find model {modelname} at {loaded_model_path}, please try again.')
-        return False
+    # if not os.path.isfile(loaded_model_path):
+    #     print(f'Could not find model {modelname} at {loaded_model_path}, please try again.')
+    #     return False
     print(f'Loading model {modelname} at {loaded_model_path}...')
     root = Root(modelpath=loaded_model_path, model_config_override=modelconfig, outputpath=outputpath)
     root = SimpleNamespace(**root)
@@ -346,17 +349,35 @@ def getargs(values, tab):
     match tab:
         case "general":
             args = {
+                'W': values['-WIDTH-'], 
+                'H': values['-HEIGHT-'],
+                'bit_depth_output': values['-BIT_DEPTH_OUTPUT-'],
+
+                # sampling
                 'seed': values['-SEED-'],
-                'seed_behavior': values['-SEED_BEHAVIOR-'],
-                'batch_size': (values['-BATCH_SIZE-']), 
-                'batch_name': values['-BATCH_NAME-'], 
                 'sampler': values['-SAMPLER-'], 
                 'steps': values['-SAMPLER_STEPS-'], 
                 'scale': values['-SAMPLER_SCALE-'], 
                 'ddim_eta': values['-DDIM_ETA-'],
-                'W': values['-WIDTH-'], 
-                'H': values['-HEIGHT-'],
-                #init
+                'save_samples': values['-SAVE_SAMPLES-'], 
+                'save_settings': values['-SAVE_SETTINGS-'],
+                'save_sample_per_step': values['-SAVE_SAMPLE_PER_STEP-'], 
+                'show_sample_per_step': values['-SHOW_SAMPLE_PER_STEP-'],  
+
+                # prompt
+                'prompt_weighting': (values['-PROMPT_WEIGHTING-']), 
+                'normalize_prompt_weights': values['-NORMALIZE_PROMPT_WEIGHTS-'],
+                'log_weighted_subprompts': values['-LOG_WEIGHTED_SUBPROMPTS-'],      
+
+                # batch
+                'batch_size': (values['-BATCH_SIZE-']), 
+                'batch_name': values['-BATCH_NAME-'],
+                'seed_behavior': values['-SEED_BEHAVIOR-'],
+                'seed_iter_N': values['-SEED_ITER_N-'],
+                'make_grid': values['-MAKE_GRID-'],
+                'grid_rows': values['-GRID_ROWS-'], 
+
+                # init
                 'use_init': values['-USE_INIT-'], 
                 'strength': values['-STRENGTH-'],  
                 'strength_0_no_init': values['-STRENGTH_0_NO_INIT-'], 
@@ -368,29 +389,51 @@ def getargs(values, tab):
                 'mask_brightness_adjust': values['-MASK_BRIGHTNESS_ADJUST-'], 
                 'mask_contrast_adjust': values['-MASK_CONTRAST_ADJUST-'], 
                 'overlay_mask': values['-OVERLAY_MASK-'], 
-                'mask_overlay_blur': values['-MASK_OVERLAY_BLUR-'],  
+                'mask_overlay_blur': values['-MASK_OVERLAY_BLUR-'],
+
+                # exposure
+                'mean_scale': values['-MEAN_SCALE-'], 
+                'var_scale': values['-VAR_SCALE-'],  
+                'exposure_scale': values['-EXPOSURE_SCALE-'], 
+                'exposure_target': values['-EXPOSURE_TARGET-'],
+
+                # color match
+                'colormatch_scale': values['-COLORMATCH_SCALE-'], 
+                'colormatch_image': values['-COLORMATCH_IMAGE-'],  
+                'colormatch_n_colors': values['-COLORMATCH_N_COLORS-'], 
+                'ignore_sat_weight': values['-IGNORE_SAT_WEIGHT-'],
+
+                # clip aesthetic
+                'clip_name': values['-CLIP_NAME-'], 
+                'clip_scale': values['-CLIP_SCALE-'],  
+                'aesthetics_scale': values['-AESTHETICS_SCALE-'], 
+                'cutn': values['-CUTN-'], 
+                'cut_pow': values['-CUT_POW-'],
+
+                # other conditional
+                'init_mse_scale': values['-INIT_MSE_SCALE-'], 
+                'init_mse_image': values['-INIT_MSE_IMAGE-'],  
+                'blue_scale': values['-BLUE_SCALE-'], 
+                # conditional gradient
+                'gradient_wrt': values['-GRADIENT_WRT-'],  
+                'gradient_add_to': values['-GRADIENT_ADD_TO-'], 
+                'decode_method': values['-DECODE_METHOD-'], 
+                'grad_threshold_type': values['-GRAD_THRESHOLD_TYPE-'], 
+                'clamp_grad_threshold': values['-CLAMP_GRAD_THRESHOLD-'], 
+                'clamp_start': values['-CLAMP_START-'], 
+                'clamp_stop': values['-CLAMP_STOP-'], 
+                'grad_inject_timing': values['-GRAD_INJECT_TIMING-'],
+
+                # speed vs vram
+                'cond_uncond_sync': values['-COND_UNCOND_SYNC-'],  
                 }
         case "animation":
             args = {
+                # animation
                 'animation_mode': values['-ANIMATION_MODE-'], 
                 'max_frames': values['-MAX_FRAMES-'], 
-                'border': values['-BORDER-'], 
-                'color_coherence': values['-COLOR_COHERENCE-'], 
-                'diffusion_cadence': values['-DIFFUSION_CADENCE-'], 
-                'use_depth_warping': values['-USE_DEPTH_WARPING-'], 
-                'midas_weight': values['-MIDAS_WEIGHT-'], 
-                'fov': values['-FOV-'], 
-                'padding_mode': values['-PADDING_MODE-'], 
-                'sampling_mode': values['-SAMPLING_MODE-'], 
-                'video_init_path': values['-VIDEO_INIT_PATH-'], 
-                'extract_nth_frame': values['-EXTRACT_NTH_FRAME-'], 
-                'overwrite_extracted_frames': values['-OVERWRITE_EXTRACTED_FRAMES-'], 
-                'use_mask_video': values['-USE_MASK_VIDEO-'], 
-                'video_mask_path': values['-VIDEO_MASK_PATH-'], 
-                'interpolate_key_frames': values['-INTERPOLATE_KEY_FRAMES-'], 
-                'interpolate_x_frames': values['-INTERPOLATE_X_FRAMES-'], 
-                'resume_from_timestring': values['-RESUME_FROM_TIMESTRING-'], 
-                'resume_timestring': values['-RESUME_TIMESTRING-'], 
+                'border': values['-BORDER-'],
+
                 # motion
                 'angle': values['-ANGLE-'],
                 'zoom': values['-ZOOM-'],
@@ -408,6 +451,39 @@ def getargs(values, tab):
                 'noise_schedule': values['-NOISE_SCHEDULE-'],
                 'strength_schedule': values['-STRENGTH_SCHEDULE-'],
                 'contrast_schedule': values['-CONTRAST_SCHEDULE-'],
+                'hybrid_video_comp_alpha_schedule': values['-HYBRID_VIDEO_COMP_ALPHA_SCHEDULE-'],
+                'hybrid_video_comp_mask_blend_alpha_schedule': values['-HYBRID_VIDEO_COMP_MASK_BLEND_ALPHA_SCHEDULE-'],
+                'hybrid_video_comp_mask_contrast_schedule': values['-HYBRID_VIDEO_COMP_MASK_CONTRAST_SCHEDULE-'],
+                'hybrid_video_comp_mask_auto_contrast_cutoff_high_schedule': values['-HYBRID_VIDEO_COMP_MASK_AUTO_CONTRAST_CUTOFF_HIGH_SCHEDULE-'],
+                'hybrid_video_comp_mask_auto_contrast_cutoff_low_schedule': values['-HYBRID_VIDEO_COMP_MASK_AUTO_CONTRAST_CUTOFF_LOW_SCHEDULE-'],
+                
+                # anti blur
+                'kernel_schedule': values['-KERNEL_SCHEDULE-'],
+                'sigma_schedule': values['-SIGMA_SCHEDULE-'],
+                'amount_schedule': values['-AMOUNT_SCHEDULE-'],
+                'threshold_schedule': values['-THRESHOLD_SCHEDULE-'],
+                
+                # coherence 
+                'color_coherence': values['-COLOR_COHERENCE-'], 
+                'diffusion_cadence': values['-DIFFUSION_CADENCE-'],
+                
+                # depth warping 
+                'use_depth_warping': values['-USE_DEPTH_WARPING-'], 
+                'midas_weight': values['-MIDAS_WEIGHT-'],
+                'near_plane': values['-NEAR_PLANE-'], 
+                'far_plane': values['-FAR_PLANE-'],  
+                'fov': values['-FOV-'], 
+                'padding_mode': values['-PADDING_MODE-'], 
+                'sampling_mode': values['-SAMPLING_MODE-'],
+                'save_depth_maps': values['-SAVE_DEPTH_MAPS-'],
+             
+                # video input 
+                'video_init_path': values['-VIDEO_INIT_PATH-'], 
+                'extract_nth_frame': values['-EXTRACT_NTH_FRAME-'], 
+                'overwrite_extracted_frames': values['-OVERWRITE_EXTRACTED_FRAMES-'], 
+                'use_mask_video': values['-USE_MASK_VIDEO-'], 
+                'video_mask_path': values['-VIDEO_MASK_PATH-'],
+
                 # hybrid
                 'hybrid_video_generate_inputframes': values['-HYBRID_VIDEO_GENERATE_INPUTFRAMES-'],
                 'hybrid_video_use_first_frame_as_init_image': values['-HYBRID_VIDEO_USE_FIRST_FRAME_AS_INIT_IMAGE-'],
@@ -419,7 +495,15 @@ def getargs(values, tab):
                 'hybrid_video_comp_mask_equalize': values['-HYBRID_VIDEO_COMP_MASK_EQUALIZE-'],
                 'hybrid_video_comp_mask_auto_contrast': values['-HYBRID_VIDEO_COMP_MASK_AUTO_CONTRAST-'],
                 'hybrid_video_comp_save_extra_frames': values['-HYBRID_VIDEO_COMP_SAVE_EXTRA_FRAMES-'],
-                'hybrid_video_use_video_as_mse_image': values['-HYBRID_VIDEO_USE_VIDEO_AS_MSE_IMAGE-'],             
+                'hybrid_video_use_video_as_mse_image': values['-HYBRID_VIDEO_USE_VIDEO_AS_MSE_IMAGE-'],   
+
+                # interpolation 
+                'interpolate_key_frames': values['-INTERPOLATE_KEY_FRAMES-'], 
+                'interpolate_x_frames': values['-INTERPOLATE_X_FRAMES-'],
+
+                # resume 
+                'resume_from_timestring': values['-RESUME_FROM_TIMESTRING-'], 
+                'resume_timestring': values['-RESUME_TIMESTRING-'],          
             }
     return args
 
@@ -436,53 +520,12 @@ def set_ready(ready):
         print('READY!')
         window['-MENUBAR-'].update(menu_definition=[['File', ['Open::-OPEN-', 'Save::-SAVE-']]])
 
-# Const
-sampler_list = [
-    "klms", 
-    "dpm2",
-    "dpm2_ancestral",
-    "heun",
-    "euler",
-    "euler_ancestral",
-    "plms", 
-    "ddim", 
-    "dpm_fast", 
-    "dpm_adaptive", 
-    "dpmpp_2s_a", 
-    "dpmpp_2m"
-    ]
-
-seed_type_list = ["iter", "fixed", "random"]
-
-anim_type_list = ["None", "2D", "3D", "Interpolate"]
-
-border_type_list = ['wrap', 'replicate']
-
-color_coherence_list = ['None', 'Match Frame 0 HSV', 'Match Frame 0 LAB', 'Match Frame 0 RGB']
-
-diffusion_cadence_list = ['1', '2', '3', '4', '5', '6', '7', '8']
-
-padding_mode_list = ['border', 'reflection', 'zeros']
-
-sampling_mode_list = ['bicubic', 'bilinear', 'nearest']
-
-hybrid_video_motion_list = ['None', 'Optical Flow', 'Perspective', 'Affine']
-
-hybrid_video_flow_method_list = ['Farneback', 'DenseRLOF', 'SF']
-
-hybrid_video_comp_mask_type_list = ['None', 'Depth', 'Video Depth', 'Blend', 'Difference']
-
-hybrid_video_comp_mask_equalize_list = ['None', 'Before', 'After', 'Both']
 
 # ****************************************************************************
 # *                               setup window                               *
 # ****************************************************************************
 
 sg.theme('DarkGrey7')
-current_image = sg.Column([[
-    sg.Multiline(disabled=True, expand_x=True, expand_y=True, reroute_stdout=app_log, reroute_stderr=app_log, reroute_cprint=app_log, autoscroll=True, auto_refresh=True),
-    sg.Image(key='-IMAGE-', size=(512, 512), background_color="#2e3238"), 
-    ]], justification='left', expand_x=False)
 
 # GENERAL Options Layout
 opt_gen_1 = sg.Frame(title='Main Options', layout=[
@@ -491,23 +534,27 @@ opt_gen_1 = sg.Frame(title='Main Options', layout=[
     [sg.Text('Batch Name: '), sg.Input('Testing', key='-BATCH_NAME-', size=(20, 1))],    
     [sg.Text('Batch Size: '), sg.Input('1', key='-BATCH_SIZE-', size=(5, 1))],
     [sg.Text('Seed: '), sg.Input('-1', key='-SEED-', size=(10, 1)), sg.Button('Random', key='-RANDOM_SEED-')],
+    [sg.Text('Seed Iteration Number: '), sg.Input('1', key='-SEED_ITER_N-', size=(5, 1))],
     [sg.Text('Seed Behavior: '), sg.Combo(seed_type_list, key='-SEED_BEHAVIOR-', default_value='iter')],
     [sg.Text('Sampler: '), sg.Combo(sampler_list, key='-SAMPLER-', default_value='euler_ancestral')],
     [sg.Text('Sampler Steps: '), sg.Input('80', key='-SAMPLER_STEPS-', size=(5, 1))],
     [sg.Text('Sampler Scale: '), sg.Input('7', key='-SAMPLER_SCALE-', size=(5, 1))],
     [sg.Text('DDIM Eta: '), sg.Input('0.0', key='-DDIM_ETA-', size=(5, 1))],
     [sg.Text('Width: '), sg.Input('512', key='-WIDTH-', size=(5, 1))],
-    [sg.Text('Height: '), sg.Input('512', key='-HEIGHT-', size=(5, 1))],       
+    [sg.Text('Height: '), sg.Input('512', key='-HEIGHT-', size=(5, 1))],
+    [sg.Text('Bit Depth Output: '), sg.Combo(bit_depth_list, key='-BIT_DEPTH_OUTPUT-', default_value='8')],
+    [sg.Checkbox('Make Grid', key='-MAKE_GRID-', )],
+    [sg.Text('Grid Rows: '), sg.Input('2', key='-GRID_ROWS-', size=(5, 1))],           
     ], vertical_alignment='top')
 
-opt_gen_2 = sg.Frame(title='Init Options', layout=[
+opt_gen_init = sg.Frame(title='Init Options', layout=[
     [sg.Checkbox('Use Init', key='-USE_INIT-', )],
     [sg.Text('Strength: '), sg.Input('0.0', key='-STRENGTH-', size=(5, 1))],
     [sg.Checkbox('Strength 0 if no init: ', key='-STRENGTH_0_NO_INIT-', default=True), ],
     [sg.Text('Init Image: '), sg.Input(key='-INIT_IMAGE-', size=(50, 1)), sg.FileBrowse(file_types=(("Image Files", "*.png *.jpg *.jpeg"),))],       
     ], vertical_alignment='top')
 
-opt_gen_3 = sg.Frame(title='Mask Options', layout=[
+opt_gen_mask = sg.Frame(title='Mask Options', layout=[
     [sg.Checkbox('Use Mask', key='-USE_MASK-'), ],
     [sg.Checkbox('Use Alpha As Mask', key='-USE_ALPHA_AS_MASK-'), ],
     [sg.Text('Mask File: '), sg.Input(key='-MASK_FILE-', size=(50, 1)), sg.FileBrowse(file_types=(("Image Files", "*.png *.jpg *.jpeg"),))],
@@ -518,8 +565,71 @@ opt_gen_3 = sg.Frame(title='Mask Options', layout=[
     [sg.Text('Mask Overlay Blur: '), sg.Input('5', key='-MASK_OVERLAY_BLUR-', size=(5, 1))],       
     ], vertical_alignment='top')
 
-opt_gen_tab = sg.Tab('General', [[opt_gen_1, opt_gen_2, opt_gen_3]], key='-GENERAL_TAB-')
+opt_gen_display = sg.Frame(title='Save/Display Options', layout=[
+    [sg.Checkbox('Save Samples', key='-SAVE_SAMPLES-', default=True), ],
+    [sg.Checkbox('Save Settings', key='-SAVE_SETTINGS-', default=True), ],   
+    [sg.Checkbox('Save Sample Per Step', key='-SAVE_SAMPLE_PER_STEP-'), ],   
+    [sg.Checkbox('Show Sample Per Step', key='-SHOW_SAMPLE_PER_STEP-'), ],     
+    ], vertical_alignment='top')
 
+opt_gen_prompt = sg.Frame(title='Prompt Weight Settings', layout=[
+    [sg.Checkbox('Prompt Weighting', key='-PROMPT_WEIGHTING-', default=True), ],
+    [sg.Checkbox('Normalize Prompt Weights', key='-NORMALIZE_PROMPT_WEIGHTS-', default=True), ],   
+    [sg.Checkbox('Log Weighted Subprompts', key='-LOG_WEIGHTED_SUBPROMPTS-'), ],       
+    ], vertical_alignment='top')
+
+opt_gen_exposure = sg.Frame(title='Exposure/Contrast Settings', layout=[
+    [sg.Text('Mean Scale: '), sg.Input('0.0', key='-MEAN_SCALE-', size=(5, 1))],
+    [sg.Text('Var Scale: '), sg.Input('0.0', key='-VAR_SCALE-', size=(5, 1))],  
+    [sg.Text('Exposure Scale: '), sg.Input('0.0', key='-EXPOSURE_SCALE-', size=(5, 1))],
+    [sg.Text('Exposure Target: '), sg.Input('0.5', key='-EXPOSURE_TARGET-', size=(5, 1))],     
+    ], vertical_alignment='top')
+
+opt_gen_colormatch = sg.Frame(title='Colormatch Settings', layout=[
+    [sg.Text('Colormatch Scale: '), sg.Input('0', key='-COLORMATCH_SCALE-', size=(5, 1))],
+    [sg.Text('Colormatch Image: '), sg.Input(key='-COLORMATCH_IMAGE-', size=(50, 1)), sg.FileBrowse(file_types=(("Image Files", "*.png *.jpg *.jpeg"),))], 
+    [sg.Text('Colormatch N Colors: '), sg.Input('4', key='-COLORMATCH_N_COLORS-', size=(5, 1))],
+    [sg.Text('Ignore Sat Weight: '), sg.Input('0', key='-IGNORE_SAT_WEIGHT-', size=(5, 1))],     
+    ], vertical_alignment='top')
+
+opt_gen_clip = sg.Frame(title='Clip/Aesthetics Settings', layout=[
+    [sg.Text('Clip Name: '), sg.Combo(clip_list, key='-CLIP_NAME-', default_value='ViT-L/14')],
+    [sg.Text('Clip Scale: '), sg.Input('0', key='-CLIP_SCALE-', size=(5, 1))],  
+    [sg.Text('Aesthetics Scale: '), sg.Input('0', key='-AESTHETICS_SCALE-', size=(5, 1))],
+    [sg.Text('Cut N: '), sg.Input('1', key='-CUTN-', size=(5, 1))],
+    [sg.Text('Cut Power: '), sg.Input('0.0001', key='-CUT_POW-', size=(10, 1))],          
+    ], vertical_alignment='top')
+
+opt_gen_other = sg.Frame(title='Other Conditional Settings', layout=[
+    [sg.Text('Init MSE Scale: '), sg.Input('0', key='-INIT_MSE_SCALE-', size=(5, 1))],   
+    [sg.Text('Init MSE Image: '), sg.Input(key='-INIT_MSE_IMAGE-', size=(50, 1)), sg.FileBrowse(file_types=(("Image Files", "*.png *.jpg *.jpeg"),))], 
+    [sg.Text('Blue Scale: '), sg.Input('0', key='-BLUE_SCALE-', size=(5, 1))],      
+    ], vertical_alignment='top')
+
+opt_gen_gradient = sg.Frame(title='Conditional Gradient Settings', layout=[
+    [sg.Text('Gradient WRT: '), sg.Combo(gradient_wrt_list, key='-GRADIENT_WRT-', default_value='x0_pred')],
+    [sg.Text('Gradient Add To: '), sg.Combo(gradient_add_list, key='-GRADIENT_ADD_TO-', default_value='both')],
+    [sg.Text('Decode Method: '), sg.Combo(decode_method_list, key='-DECODE_METHOD-', default_value='linear')],
+    [sg.Text('Threshold Type: '), sg.Combo(grad_threshold_list, key='-GRAD_THRESHOLD_TYPE-', default_value='dynamic')],
+    [sg.Text('Clamp Gradient Threshold: '), sg.Input('0.2', key='-CLAMP_GRAD_THRESHOLD-', size=(5, 1))],
+    [sg.Text('Clamp Start: '), sg.Input('0.2', key='-CLAMP_START-', size=(5, 1))],
+    [sg.Text('Clamp Stop: '), sg.Input('0.01', key='-CLAMP_STOP-', size=(5, 1))],
+    [sg.Text('Gradient Inject Timing: '), sg.Input('list(range(1,10))', key='-GRAD_INJECT_TIMING-', size=(20, 1))],    
+    ], vertical_alignment='top')
+
+opt_gen_speed = sg.Frame(title='Conditional Gradient Settings', layout=[
+    [sg.Checkbox('Cond Uncond Sync', key='-COND_UNCOND_SYNC-', default=True), ], 
+    ], vertical_alignment='top')
+
+opt_gen_tab = sg.Tab('General', [[opt_gen_1, opt_gen_display, opt_gen_prompt]], key='-GENERAL_TAB-')
+
+opt_init_mask_tab = sg.Tab('Init/Mask', [[opt_gen_init, opt_gen_mask]], key='-INIT_MASK_TAB-')
+
+opt_exposure_colormatch_tab = sg.Tab('Exposure/ColorMatch', [[opt_gen_exposure, opt_gen_colormatch]], key='-EXPOSURE_COLORMATCH_TAB-')
+
+opt_clip_gradient_tab = sg.Tab('Clip/Gradient', [[opt_gen_clip], [opt_gen_gradient]], key='-CLIP_GRADIENT_TAB-')
+
+opt_speed_other_tab = sg.Tab('Speed/Other', [[opt_gen_speed], [opt_gen_other]], key='-SPEED_OTHER_TAB-')
 
 # Anim Options Layout
 opt_anim_1 = sg.Frame(title='General Animation', layout=[
@@ -538,9 +648,12 @@ opt_anim_1 = sg.Frame(title='General Animation', layout=[
 opt_anim_2 = sg.Frame(title='Depth Warping', layout=[
     [sg.Checkbox('Use Depth Warping', key='-USE_DEPTH_WARPING-', default=True)],
     [sg.Text('Midas Weight: '), sg.Input('0.3', key='-MIDAS_WEIGHT-', size=(5, 1))],
+    [sg.Text('Near Plane: '), sg.Input('200', key='-NEAR_PLANE-', size=(10, 1))],
+    [sg.Text('Far Plane: '), sg.Input('10000', key='-FAR_PLANE-', size=(10, 1))],
     [sg.Text('FOV: '), sg.Input('40', key='-FOV-', size=(5, 1))],
     [sg.Text('Padding Mode: '), sg.Combo(padding_mode_list, key='-PADDING_MODE-', default_value='border')],
     [sg.Text('Sampling Mode: '), sg.Combo(sampling_mode_list, key='-SAMPLING_MODE-', default_value='bicubic')],
+    [sg.Checkbox('Save Depth Maps', key='-SAVE_DEPTH_MAPS-', )],
     ], vertical_alignment='top')
 
 opt_anim_3 = sg.Frame(title='Video Input Settings', layout=[
@@ -582,44 +695,77 @@ def motion_opt(displaytext, defaulttext):
 
 
 opt_motion = sg.Column([
-    motion_opt('Angle', "0:(0)"),
-    motion_opt('Zoom', "0:(1.04)"),
-    motion_opt('Translation X', "0:(10*sin(2*3.14*t/10))"),
-    motion_opt('Translation Y', "0:(0)"),
-    motion_opt('Translation Z', "0:(10)"),
-    motion_opt('Rotation 3D X', "0:(0)"),
-    motion_opt('Rotation 3D Y', "0:(0)"),
-    motion_opt('Rotation 3D Z', "0:(0)"),
-    [sg.Checkbox('Flip 2D Perspective', key='-FLIP_2D_PERSPECTIVE-')],
-    motion_opt('Perspective Flip Theta', "0:(0)"),
-    motion_opt('Perspective Flip Phi', "0:(t%15)"),
-    motion_opt('Perspective Flip Gamma', "0:(10)"),
-    motion_opt('Perspective Flip FV', "0:(53)"),
-    motion_opt('Noise Schedule', "0:(0.02)"),
-    motion_opt('Strength Schedule', "0: (0.65)"),
-    motion_opt('Contrast Schedule', "0: (1.0)"),
-    ], expand_x=True)
+    [sg.Frame('Motion', [
+        motion_opt('Angle', "0:(0)"),
+        motion_opt('Zoom', "0:(1.04)"),
+        motion_opt('Translation X', "0:(10*sin(2*3.14*t/10))"),
+        motion_opt('Translation Y', "0:(0)"),
+        motion_opt('Translation Z', "0:(10)"),
+        motion_opt('Rotation 3D X', "0:(0)"),
+        motion_opt('Rotation 3D Y', "0:(0)"),
+        motion_opt('Rotation 3D Z', "0:(0)"),
+        [sg.Checkbox('Flip 2D Perspective', key='-FLIP_2D_PERSPECTIVE-')],
+        motion_opt('Perspective Flip Theta', "0:(0)"),
+        motion_opt('Perspective Flip Phi', "0:(t%15)"),
+        motion_opt('Perspective Flip Gamma', "0:(10)"),
+        motion_opt('Perspective Flip FV', "0:(53)"),
+        motion_opt('Noise Schedule', "0:(0.02)"),
+        motion_opt('Strength Schedule', "0:(0.65)"),
+        motion_opt('Contrast Schedule', "0:(1.0)"),
+        # hybrid
+        motion_opt('Hybrid Video Comp Alpha Schedule', "0:(1)"),
+        motion_opt('Hybrid Video Comp Mask Blend Alpha Schedule', "0:(0.5)"),
+        motion_opt('Hybrid Video Comp Mask Contrast Schedule', "0:(1)"),
+        motion_opt('Hybrid Video Comp Mask Auto Contrast Cutoff High Schedule', "0:(100)"),
+        motion_opt('Hybrid Video Comp Mask Auto Contrast Cutoff Low Schedule', "0:(0)"),
+        ], expand_x=True)],
+    [sg.Frame('Unsharp mask (anti-blur)', [
+        motion_opt('Kernel Schedule', "0:(5)"),
+        motion_opt('Sigma Schedule', "0:(1.0)"),
+        motion_opt('Amount Schedule', "0:(0.2)"),
+        motion_opt('Threshold Schedule', "0:(0.0)"),
+        ], expand_x=True)],
+
+], scrollable=True, expand_x=True, expand_y=True, vertical_scroll_only=True)
 
 opt_motion_tab = sg.Tab('Anim Motion', [[opt_motion]], key='-MOTION_TAB-')
 
-tab_layout = sg.TabGroup([[opt_gen_tab], [opt_anim_tab], [opt_motion_tab]], key='-TABGROUP-', expand_x=True)
+tab_layout = sg.TabGroup([
+    [opt_gen_tab], 
+    [opt_init_mask_tab], 
+    [opt_exposure_colormatch_tab], 
+    [opt_clip_gradient_tab], 
+    [opt_speed_other_tab], 
+    [opt_anim_tab], 
+    [opt_motion_tab]], 
+    key='-TABGROUP-', expand_x=True)
 
 menu_def = [['File', ['Open::-OPEN-', 'Save::-SAVE-']]]
 
+log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, reroute_stdout=app_log, reroute_stderr=app_log, reroute_cprint=app_log, autoscroll=True, auto_refresh=True)
+
+prompt_box = sg.Column([
+    [sg.Text('Prompts: (Separated by new line) '), sg.Text('Suffix: '), sg.Input('', key='-SUFFIX-', expand_x=True)],
+    [sg.Multiline(expand_x=True, expand_y=False, key='-PROMPTS-', size=(0,20))],
+    [sg.Text('Output Path: '), sg.Input(f'{os.path.dirname(os.path.abspath(__file__))}\\output', key='-OUTPUT_PATH-', size=(80, 1)), sg.FileBrowse()],
+    [sg.Button('Render', key='-RENDER-'), sg.Button('Reload Model', key='-RELOAD-'), sg.Button('Cancel Render', key='-CANCEL-')],
+    [log_ml],
+    ], vertical_alignment='top', expand_x=True, expand_y=True)
+
+
+
+current_image = sg.Column([[
+    sg.Image(key='-IMAGE-', size=(768, 768), background_color="#2e3238"), 
+    ]], expand_x=False)
+
 layout = [
     [sg.Menubar(menu_def, key='-MENUBAR-')],
-    [current_image], 
+    [current_image, prompt_box], 
     [tab_layout],
-    [sg.Text('Prompts: (Separated by new line) '), sg.Text('Suffix: '), sg.Input('', key='-SUFFIX-', expand_x=True)],
-    [sg.Multiline(expand_x=True, expand_y=True, key='-PROMPTS-')],
-    [sg.Text('Output Path: '), sg.Input(f'{os.path.dirname(os.path.abspath(__file__))}\\output', key='-OUTPUT_PATH-', size=(80, 1)), sg.FileBrowse()],
-    [sg.Button('Render', key='-RENDER-'), sg.Button('Reload Model', key='-RELOAD-'), sg.Button('Cancel Render', key='-CANCEL-')]
     ]
   
 window = sg.Window('Deforum Wrapper', layout, resizable=True, finalize=True, size=(720, 920), font=("Calibri", 11), enable_close_attempted_event=True)
 gui.guiwindow = window
-gui.show_login_popup()
-window.maximize()
 
 # ****************************************************************************
 # *                                event loop                                *
@@ -664,17 +810,32 @@ def load_settings(file):
         window['-FPS-'].update(value=settings['fps'])
         window['-MAKE_GIF-'].update(value=settings['make_gif'])
         window['-OUTPUT_PATH-'].update(value=settings['output_path'])
-        #general
-        window['-BATCH_NAME-'].update(value=settings['args']['batch_name'])
-        window['-BATCH_SIZE-'].update(value=settings['args']['n_batch'])
+
+        # general
+        window['-WIDTH-'].update(value=settings['args']['W'])
+        window['-HEIGHT-'].update(value=settings['args']['H'])
+        window['-BIT_DEPTH_OUTPUT-'].update(value=settings['args']['bit_depth_output'])
+
+        # sampling
         window['-SEED-'].update(value=settings['args']['seed'])
-        window['-SEED_BEHAVIOR-'].update(value=settings['args']['seed_behavior'])
         window['-SAMPLER-'].update(value=settings['args']['sampler'])
         window['-SAMPLER_STEPS-'].update(value=settings['args']['steps'])
         window['-SAMPLER_SCALE-'].update(value=settings['args']['scale'])
         window['-DDIM_ETA-'].update(value=settings['args']['ddim_eta'])
-        window['-WIDTH-'].update(value=settings['args']['W'])
-        window['-HEIGHT-'].update(value=settings['args']['H'])
+        window['-SAVE_SAMPLES-'].update(value=settings['args']['save_samples'])
+        window['-SAVE_SETTINGS-'].update(value=settings['args']['save_settings'])
+        window['-SAVE_SAMPLE_PER_STEP-'].update(value=settings['args']['save_sample_per_step'])
+        window['-SHOW_SAMPLE_PER_STEP-']  .update(value=settings['args']['show_sample_per_step'])
+
+        # batch
+        window['-BATCH_SIZE-'].update(value=settings['args']['n_batch'])
+        window['-BATCH_NAME-'].update(value=settings['args']['batch_name'])
+        window['-SEED_BEHAVIOR-'].update(value=settings['args']['seed_behavior'])
+        window['-SEED_ITER_N-'].update(value=settings['args']['seed_iter_N'])
+        window['-MAKE_GRID-'].update(value=settings['args']['make_grid'])
+        window['-GRID_ROWS-'].update(value=settings['args']['grid_rows'])
+
+        # init
         window['-USE_INIT-'].update(value=settings['args']['use_init'])
         window['-STRENGTH-'].update(value=settings['args']['strength'])
         window['-STRENGTH_0_NO_INIT-'].update(value=settings['args']['strength_0_no_init'])
@@ -688,27 +849,49 @@ def load_settings(file):
         window['-OVERLAY_MASK-'].update(value=settings['args']['overlay_mask'])
         window['-MASK_OVERLAY_BLUR-'].update(value=settings['args']['mask_overlay_blur'])
 
+        # exposure
+        window['-MEAN_SCALE-'].update(value=settings['args']['mean_scale'])
+        window['-VAR_SCALE-'].update(value=settings['args']['var_scale'])
+        window['-EXPOSURE_SCALE-'].update(value=settings['args']['exposure_scale'])
+        window['-EXPOSURE_TARGET-'].update(value=settings['args']['exposure_target'])
+        
+        # color match
+        window['-COLORMATCH_SCALE-'].update(value=settings['args']['colormatch_scale'])
+        window['-COLORMATCH_IMAGE-'].update(value=settings['args']['colormatch_image'])
+        window['-COLORMATCH_N_COLORS-'].update(value=settings['args']['colormatch_n_colors'])
+        window['-IGNORE_SAT_WEIGHT-'].update(value=settings['args']['ignore_sat_weight'])
+
+        # clip aesthetic
+        window['-CLIP_NAME-'].update(value=settings['args']['clip_name'])
+        window['-CLIP_SCALE-'].update(value=settings['args']['clip_scale'])
+        window['-AESTHETICS_SCALE-'].update(value=settings['args']['aesthetics_scale'])
+        window['-CUTN-'].update(value=settings['args']['cutn'])
+        window['-CUT_POW-'].update(value=settings['args']['cut_pow'])
+
+        # other conditional                       
+        window['-INIT_MSE_SCALE-'].update(value=settings['args']['init_mse_scale'])
+        window['-INIT_MSE_IMAGE-'].update(value=settings['args']['init_mse_image'])
+        window['-BLUE_SCALE-'].update(value=settings['args']['blue_scale'])
+
+        # conditional gradient
+        window['-GRADIENT_WRT-'].update(value=settings['args']['gradient_wrt'])
+        window['-GRADIENT_ADD_TO-'].update(value=settings['args']['gradient_add_to'])
+        window['-DECODE_METHOD-'].update(value=settings['args']['decode_method'])
+        window['-GRAD_THRESHOLD_TYPE-'].update(value=settings['args']['grad_threshold_type'])
+        window['-CLAMP_GRAD_THRESHOLD-'].update(value=settings['args']['clamp_grad_threshold'])
+        window['-CLAMP_START-'].update(value=settings['args']['clamp_start'])
+        window['-CLAMP_STOP-'].update(value=settings['args']['clamp_stop'])
+        window['-GRAD_INJECT_TIMING-'].update(value=settings['args']['grad_inject_timing'])
+
+        # speed vs vram
+        window['-COND_UNCOND_SYNC-'].update(value=settings['args']['cond_uncond_sync'])
+
         #anim
         window['-ANIMATION_MODE-'].update(value=settings['anim_args']['animation_mode'])
         window['-MAX_FRAMES-'].update(value=settings['anim_args']['max_frames'])
         window['-BORDER-'].update(value=settings['anim_args']['border'])
-        window['-COLOR_COHERENCE-'].update(value=settings['anim_args']['color_coherence'])
-        window['-DIFFUSION_CADENCE-'].update(value=settings['anim_args']['diffusion_cadence'])
-        window['-USE_DEPTH_WARPING-'].update(value=settings['anim_args']['use_depth_warping'])
-        window['-MIDAS_WEIGHT-'].update(value=settings['anim_args']['midas_weight'])
-        window['-FOV-'].update(value=settings['anim_args']['fov'])
-        window['-PADDING_MODE-'].update(value=settings['anim_args']['padding_mode'])
-        window['-SAMPLING_MODE-'].update(value=settings['anim_args']['sampling_mode'])
-        window['-VIDEO_INIT_PATH-'].update(value=settings['anim_args']['video_init_path'])
-        window['-EXTRACT_NTH_FRAME-'].update(value=settings['anim_args']['extract_nth_frame'])
-        window['-OVERWRITE_EXTRACTED_FRAMES-'].update(value=settings['anim_args']['overwrite_extracted_frames'])
-        window['-USE_MASK_VIDEO-'].update(value=settings['anim_args']['use_mask_video'])
-        window['-VIDEO_MASK_PATH-'].update(value=settings['anim_args']['video_mask_path'])
-        window['-INTERPOLATE_KEY_FRAMES-'].update(value=settings['anim_args']['interpolate_key_frames'])
-        window['-INTERPOLATE_X_FRAMES-'].update(value=settings['anim_args']['interpolate_x_frames'])
-        window['-RESUME_FROM_TIMESTRING-'].update(value=settings['anim_args']['resume_from_timestring'])
-        window['-RESUME_TIMESTRING-'].update(value=settings['anim_args']['resume_timestring'])
         window['-REMOVE_FRAMES_AFTER-'].update(value=settings['remove_frames_after'])
+
         #motion
         window['-ANGLE-'].update(value=settings['anim_args']['angle'])
         window['-ZOOM-'].update(value=settings['anim_args']['zoom'])
@@ -726,6 +909,58 @@ def load_settings(file):
         window['-NOISE_SCHEDULE-'].update(value=settings['anim_args']['noise_schedule'])
         window['-STRENGTH_SCHEDULE-'].update(value=settings['anim_args']['strength_schedule'])
         window['-CONTRAST_SCHEDULE-'].update(value=settings['anim_args']['contrast_schedule'])
+        window['-HYBRID_VIDEO_COMP_ALPHA_SCHEDULE-'].update(value=settings['anim_args']['hybrid_video_comp_alpha_schedule'])
+        window['-HYBRID_VIDEO_COMP_MASK_BLEND_ALPHA_SCHEDULE-'].update(value=settings['anim_args']['hybrid_video_comp_mask_blend_alpha_schedule'])
+        window['-HYBRID_VIDEO_COMP_MASK_CONTRAST_SCHEDULE-'].update(value=settings['anim_args']['hybrid_video_comp_mask_contrast_schedule'])
+        window['-HYBRID_VIDEO_COMP_MASK_AUTO_CONTRAST_CUTOFF_HIGH_SCHEDULE-'].update(value=settings['anim_args']['hybrid_video_comp_mask_auto_contrast_cutoff_high_schedule'])
+        window['-HYBRID_VIDEO_COMP_MASK_AUTO_CONTRAST_CUTOFF_LOW_SCHEDULE-'].update(value=settings['anim_args']['hybrid_video_comp_mask_auto_contrast_cutoff_low_schedule'])
+
+        # anti blur
+        window['-KERNEL_SCHEDULE-'].update(value=settings['anim_args']['kernel_schedule'])
+        window['-SIGMA_SCHEDULE-'].update(value=settings['anim_args']['sigma_schedule'])
+        window['-AMOUNT_SCHEDULE-'].update(value=settings['anim_args']['amount_schedule'])
+        window['-THRESHOLD_SCHEDULE-'].update(value=settings['anim_args']['threshold_schedule'])       
+        
+        # coherence
+        window['-COLOR_COHERENCE-'].update(value=settings['anim_args']['color_coherence']) 
+        window['-DIFFUSION_CADENCE-'].update(value=settings['anim_args']['diffusion_cadence'])
+
+        # depth warping
+        window['-USE_DEPTH_WARPING-'].update(value=settings['anim_args']['use_depth_warping'])
+        window['-MIDAS_WEIGHT-'].update(value=settings['anim_args']['midas_weight'])
+        window['-FOV-'].update(value=settings['anim_args']['fov'])
+        window['-PADDING_MODE-'].update(value=settings['anim_args']['padding_mode'])
+        window['-SAMPLING_MODE-'].update(value=settings['anim_args']['sampling_mode'])
+        window['-SAVE_DEPTH_MAPS-'].update(value=settings['anim_args']['save_depth_maps'])
+
+        # video input
+        window['-VIDEO_INIT_PATH-'].update(value=settings['anim_args']['video_init_path'])
+        window['-EXTRACT_NTH_FRAME-'].update(value=settings['anim_args']['extract_nth_frame'])
+        window['-OVERWRITE_EXTRACTED_FRAMES-'].update(value=settings['anim_args']['overwrite_extracted_frames'])
+        window['-USE_MASK_VIDEO-'].update(value=settings['anim_args']['use_mask_video'])
+        window['-VIDEO_MASK_PATH-'].update(value=settings['anim_args']['video_mask_path'])
+
+        # hybrid
+        window['-HYBRID_VIDEO_GENERATE_INPUTFRAMES-'].update(value=settings['anim_args']['hybrid_video_generate_inputframes'])
+        window['-HYBRID_VIDEO_USE_FIRST_FRAME_AS_INIT_IMAGE-'].update(value=settings['anim_args']['hybrid_video_use_first_frame_as_init_image'])
+        window['-HYBRID_VIDEO_MOTION-'].update(value=settings['anim_args']['hybrid_video_motion'])
+        window['-HYBRID_VIDEO_FLOW_METHOD-'].update(value=settings['anim_args']['hybrid_video_flow_method'])
+        window['-HYBRID_VIDEO_COMPOSITE-'].update(value=settings['anim_args']['hybrid_video_composite'])
+        window['-HYBRID_VIDEO_COMP_MASK_TYPE-'].update(value=settings['anim_args']['hybrid_video_comp_mask_type'])
+        window['-HYBRID_VIDEO_COMP_MASK_INVERSE-'].update(value=settings['anim_args']['hybrid_video_comp_mask_inverse'])
+        window['-HYBRID_VIDEO_COMP_MASK_EQUALIZE-'].update(value=settings['anim_args']['hybrid_video_comp_mask_equalize'])
+        window['-HYBRID_VIDEO_COMP_MASK_AUTO_CONTRAST-'].update(value=settings['anim_args']['hybrid_video_comp_mask_auto_contrast'])
+        window['-HYBRID_VIDEO_COMP_SAVE_EXTRA_FRAMES-'].update(value=settings['anim_args']['hybrid_video_comp_save_extra_frames'])        
+        window['-HYBRID_VIDEO_USE_VIDEO_AS_MSE_IMAGE-'].update(value=settings['anim_args']['hybrid_video_use_video_as_mse_image'])
+
+        # interpolation
+        window['-INTERPOLATE_KEY_FRAMES-'].update(value=settings['anim_args']['interpolate_key_frames'])
+        window['-INTERPOLATE_X_FRAMES-'].update(value=settings['anim_args']['interpolate_x_frames'])
+
+        # resume
+        window['-RESUME_FROM_TIMESTRING-'].update(value=settings['anim_args']['resume_from_timestring'])
+        window['-RESUME_TIMESTRING-'].update(value=settings['anim_args']['resume_timestring'])
+
         if file != 'saved_settings.pickle':
             print(f'Successfully saved to {file}!')
         return settings

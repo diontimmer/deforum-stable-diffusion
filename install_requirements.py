@@ -38,6 +38,7 @@ packages = [
     "ninja",
     "triton",
     "git+https://github.com/facebookresearch/xformers.git@main#egg=xformers",
+    "PySimpleGui"
 ]
 
 # Install each package

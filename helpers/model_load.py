@@ -186,7 +186,7 @@ def load_model(root, load_on_run_all=True, check_sha256=True):
         print(f"Using {ckpt_config_path} instead.")
         
     ckpt_config_path = os.path.abspath(ckpt_config_path)
-
+    print(root.model_checkpoint)
     # checkpoint path or download
     ckpt_path = root.custom_checkpoint_path if root.model_checkpoint == "custom" else os.path.join(root.models_path, root.model_checkpoint)
     ckpt_valid = True
