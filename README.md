@@ -1,6 +1,6 @@
 # Deforum Stable Diffusion GUI
 
-This GUI allows you to use Deforum locally without the need for google colab. This fork comes with a couple extra settings such as being able to remove animation frames after export and the saving and loading of settings. Settings will be saved upon close, to initialize the gui again please close the gui and remove "saved_settings.pickle". Credits go to the deforum devs and community for the magic behind the program. Ive tried my best to wrap around the original code with minimal hooks, but issues should still be brought up here as well in case some variables are incorrectly casted from the GUIs string types.
+This GUI allows you to use Deforum locally without the need for google colab. This fork comes with a couple extra settings such as being able to remove animation frames after export, the saving and loading of settings aswell as a suffix system to put the same information after every prompt separated by a comma. Settings will be saved upon close, to initialize the gui again please close the gui and remove "saved_settings.pickle". Credits go to the deforum devs and community for the magic behind the program. Ive tried my best to wrap around the original code with minimal hooks, but issues should still be brought up here as well in case some variables are incorrectly casted from the GUIs string types.
 
 
 ## Install
