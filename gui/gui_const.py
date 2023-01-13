@@ -28,7 +28,7 @@ seed_type_list = ["iter", "fixed", "random"]
 
 bit_depth_list = [8, 16, 32]
 
-anim_type_list = ["None", "2D", "3D", "Interpolate"]
+anim_type_list = ['None', '2D', '3D', 'Video Input', 'Interpolation']
 
 border_type_list = ['wrap', 'replicate']
 
