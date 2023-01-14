@@ -2,12 +2,17 @@ import PySimpleGUI as sg
 import subprocess, time, gc, sys, os, random, torch  # noqa: E401
 from types import SimpleNamespace
 from helpers.save_images import get_output_folder
-from threading import Thread
+import time
+from contextlib import redirect_stdout
+import io
+import sys
+import trace
 import pickle
 import clip
 import gui.gui_interface as gui
 from gui.gui_const import *
 from base64 import b64encode
+import threading
 
 sys.path.extend(['src'])
 
@@ -21,6 +26,36 @@ from helpers.aesthetics import load_aesthetics_model
 # *                                  helpers                                 *
 # ****************************************************************************
 
+
+class KThread(threading.Thread):
+  """A subclass of threading.Thread, with a kill()
+method."""
+  def __init__(self, *args, **keywords):
+    threading.Thread.__init__(self, *args, **keywords)
+    self.killed = False
+  def start(self):
+    """Start the thread."""
+    self.__run_backup = self.run
+    self.run = self.__run     
+    threading.Thread.start(self)
+  def __run(self):
+    """Hacked run function, which installs the
+trace."""
+    sys.settrace(self.globaltrace)
+    self.__run_backup()
+    self.run = self.__run_backup
+  def globaltrace(self, frame, why, arg):
+    if why == 'call':
+      return self.localtrace
+    else:
+      return None
+  def localtrace(self, frame, why, arg):
+    if self.killed:
+      if why == 'line':
+        raise SystemExit()
+    return self.localtrace
+  def kill(self):
+    self.killed = True
 
 def Root(modelpath='', model_config_override='', outputpath='outputs'):
     models_path = "models"
@@ -231,6 +266,23 @@ def DeforumArgs(overrides):
     return locals()
 
 
+# parsing = True
+
+# def parse_stdout():
+#     global parsing
+#     sys.stdout = io.StringIO()
+#     sys.stderr = io.StringIO()
+#     while parsing:
+#         output = sys.stdout.getvalue()
+#         error = sys.stderr.getvalue()
+#         print('eep')
+#         print('PARSED!' + output)
+#         print('PARSED!' + error)
+#     return
+
+# KThread(target=parse_stdout, daemon=True).start()
+
+
 def load_root_model(modelname, modelconfig, outputpath):
     set_ready(False)
     global root
@@ -280,6 +332,7 @@ def loadanimargs(anim_args, args):
 
 def do_render(args):
     prompts = values['-PROMPTS-'].split('\n')
+    prompts = [x.split(': ', 1)[-1] for x in prompts]
     suffix = values['-SUFFIX-']
     args = loadargs(args)
     set_ready(False)
@@ -295,6 +348,11 @@ def do_render(args):
 
 def do_video_render(args, anim_args):
     prompts = values['-PROMPTS-'].split('\n')
+    for prompt in prompts:
+        if not prompt[0].isdigit():
+            print('Please note the keyframes in your animation prompts.')
+            set_ready(True)
+            return
     suffix = values['-SUFFIX-']
     prompt_dict = {}
     for prompt in prompts:
@@ -739,7 +797,7 @@ prompt_box = sg.Column([
     [sg.Text('Prompts: (Separated by new line) '), sg.Text('Suffix: '), sg.Input('', key='-SUFFIX-', expand_x=True)],
     [sg.Multiline(expand_x=True, expand_y=False, key='-PROMPTS-', size=(0,20))],
     [sg.Text('Output Path: '), sg.Input(f'{os.path.dirname(os.path.abspath(__file__))}\\output', key='-OUTPUT_PATH-', size=(80, 1)), sg.FileBrowse()],
-    [sg.Button('Render', key='-RENDER-'), sg.Button('Reload Model', key='-RELOAD-')],
+    [sg.Button('Render', key='-RENDER-'), sg.Button('Reload Model', key='-RELOAD-'), sg.Button('Cancel', key='-CANCEL-')],
     [log_ml],
     ], vertical_alignment='top', expand_x=True, expand_y=True)
 
@@ -1013,7 +1071,7 @@ else:
 sub_p_res = subprocess.run(['nvidia-smi', '--query-gpu=name,memory.total,memory.free', '--format=csv,noheader'], stdout=subprocess.PIPE).stdout.decode('utf-8')
 print(f"{sub_p_res[:-1]}")
 
-Thread(target=load_root_model, args=(initmodel, initconfig, f'{os.path.dirname(os.path.abspath(__file__))}/output'), daemon=True).start()
+KThread(target=load_root_model, args=(initmodel, initconfig, f'{os.path.dirname(os.path.abspath(__file__))}/output'), daemon=True).start()
 
 while True:
     event, values = window.read()
@@ -1021,21 +1079,23 @@ while True:
         if values['-ANIMATION_MODE-'] == 'None':
             args = DeforumArgs(getargs(values, "general"))
             save_settings(values, 'saved_settings.pickle')
-            renderthread = Thread(target=do_render, args=(args,), daemon=True)
-            renderthread.start()
+            renderprocess = KThread(target=do_render, args=(args,), daemon=True)
+            renderprocess.start()
         else:
             args = DeforumArgs(getargs(values, "general"))
             anim_args = DeforumAnimArgs(getargs(values, "animation"))
             save_settings(values, 'saved_settings.pickle')
-            renderthread = Thread(target=do_video_render, args=(args, anim_args,), daemon=True)
-            renderthread.start()
+            renderprocess = KThread(target=do_video_render, args=(args, anim_args,), daemon=True)
+            renderprocess.start()
 
     if event == '-RELOAD-':
-        Thread(target=load_root_model, args=(values['-MODEL-'], values['-MODEL_CONFIG-'], values['-OUTPUT_PATH-']), daemon=True).start()
+        KThread(target=load_root_model, args=(values['-MODEL-'], values['-MODEL_CONFIG-'], values['-OUTPUT_PATH-']), daemon=True).start()
         save_settings(values, 'saved_settings.pickle')
 
     if event == '-CANCEL-':
-        pass
+        renderprocess.kill()
+        set_ready(True)
+        print('Process Canceled!')
     if event == '-RANDOM_SEED-':
         window['-SEED-'].update(value=random.randint(0, 2**32 - 1))
     if event == 'Open::-OPEN-':
