@@ -1073,6 +1073,8 @@ print(f"{sub_p_res[:-1]}")
 
 KThread(target=load_root_model, args=(initmodel, initconfig, f'{os.path.dirname(os.path.abspath(__file__))}/output'), daemon=True).start()
 
+renderprocess = None
+
 while True:
     event, values = window.read()
     if event == '-RENDER-':
@@ -1093,9 +1095,10 @@ while True:
         save_settings(values, 'saved_settings.pickle')
 
     if event == '-CANCEL-':
-        renderprocess.kill()
-        set_ready(True)
-        print('Process Canceled!')
+        if renderprocess is not None:
+            renderprocess.kill()
+            set_ready(True)
+            print('Process Canceled!')
     if event == '-RANDOM_SEED-':
         window['-SEED-'].update(value=random.randint(0, 2**32 - 1))
     if event == 'Open::-OPEN-':
