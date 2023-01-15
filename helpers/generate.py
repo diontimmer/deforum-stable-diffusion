@@ -224,7 +224,7 @@ def generate(args, root, frame = 0, return_latent=False, return_sample=False, re
                             verbose=False)
                     else:
                         # args.sampler == 'plms' or args.sampler == 'ddim':
-                        if init_latent is not None and args.strength > 0:
+                        if init_latent is not None and args.strength > 0 and args.sampler != 'plms':
                             z_enc = sampler.stochastic_encode(init_latent, torch.tensor([t_enc]*batch_size).to(root.device))
                         else:
                             z_enc = torch.randn([args.n_samples, args.C, args.H // args.f, args.W // args.f], device=root.device)
@@ -234,7 +234,7 @@ def generate(args, root, frame = 0, return_latent=False, return_sample=False, re
                                                      t_enc, 
                                                      unconditional_guidance_scale=args.scale,
                                                      unconditional_conditioning=uc,
-                                                     img_callback=callback)
+                                                     callback=callback)
                         elif args.sampler == 'plms': # no "decode" function in plms, so use "sample"
                             shape = [args.C, args.H // args.f, args.W // args.f]
                             samples, _ = sampler.sample(S=args.steps,

@@ -3,7 +3,6 @@ import subprocess, time, gc, sys, os, random, torch  # noqa: E401
 from types import SimpleNamespace
 from helpers.save_images import get_output_folder
 import time
-from contextlib import redirect_stdout
 import io
 import sys
 import trace
@@ -12,11 +11,10 @@ import clip
 import gui.gui_interface as gui
 from gui.gui_const import *
 from base64 import b64encode
-import threading
 
 sys.path.extend(['src'])
 
-app_log = True
+app_log = False
 
 from helpers.render import render_animation, render_input_video, render_image_batch, render_interpolation
 from helpers.model_load import make_linear_decode, load_model, get_model_output_paths
@@ -26,36 +24,19 @@ from helpers.aesthetics import load_aesthetics_model
 # *                                  helpers                                 *
 # ****************************************************************************
 
+sys.stdout = io.StringIO()
+sys.stderr = io.StringIO()
 
-class KThread(threading.Thread):
-  """A subclass of threading.Thread, with a kill()
-method."""
-  def __init__(self, *args, **keywords):
-    threading.Thread.__init__(self, *args, **keywords)
-    self.killed = False
-  def start(self):
-    """Start the thread."""
-    self.__run_backup = self.run
-    self.run = self.__run     
-    threading.Thread.start(self)
-  def __run(self):
-    """Hacked run function, which installs the
-trace."""
-    sys.settrace(self.globaltrace)
-    self.__run_backup()
-    self.run = self.__run_backup
-  def globaltrace(self, frame, why, arg):
-    if why == 'call':
-      return self.localtrace
-    else:
-      return None
-  def localtrace(self, frame, why, arg):
-    if self.killed:
-      if why == 'line':
-        raise SystemExit()
-    return self.localtrace
-  def kill(self):
-    self.killed = True
+# run your script
+
+# get the captured output and error
+output_vals = sys.stdout.getvalue()
+error_vals = sys.stderr.getvalue()
+
+# reset redirect
+sys.stdout = sys.__stdout__
+sys.stderr = sys.__stderr__
+
 
 def Root(modelpath='', model_config_override='', outputpath='outputs'):
     models_path = "models"
@@ -152,6 +133,7 @@ def DeforumAnimArgs(overrides):
     resume_timestring = overrides['resume_timestring']
 
     return locals()
+
 
 def DeforumArgs(overrides):
     W = int(overrides['W'])
@@ -266,23 +248,6 @@ def DeforumArgs(overrides):
     return locals()
 
 
-# parsing = True
-
-# def parse_stdout():
-#     global parsing
-#     sys.stdout = io.StringIO()
-#     sys.stderr = io.StringIO()
-#     while parsing:
-#         output = sys.stdout.getvalue()
-#         error = sys.stderr.getvalue()
-#         print('eep')
-#         print('PARSED!' + output)
-#         print('PARSED!' + error)
-#     return
-
-# KThread(target=parse_stdout, daemon=True).start()
-
-
 def load_root_model(modelname, modelconfig, outputpath):
     set_ready(False)
     global root
@@ -320,6 +285,7 @@ def loadargs(args):
     if args.sampler != 'ddim':
         args.ddim_eta = 0
     return args
+
 
 def loadanimargs(anim_args, args):
     anim_args = SimpleNamespace(**anim_args)
@@ -385,7 +351,10 @@ def getmodels():
     modelvals = []
     for file in os.listdir("models"):
         modelvals.append(file)
+    if 'v1-5-pruned-emaonly.ckpt' not in modelvals:
+        modelvals.append('v1-5-pruned-emaonly.ckpt')
     return modelvals
+
 
 def getconfigs():
     configvals = []
@@ -791,7 +760,7 @@ tab_layout = sg.TabGroup([
 
 menu_def = [['File', ['Open::-OPEN-', 'Save::-SAVE-']]]
 
-log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, reroute_stdout=app_log, reroute_stderr=app_log, reroute_cprint=app_log, autoscroll=True, auto_refresh=True)
+log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, reroute_stdout=app_log, reroute_stderr=app_log, reroute_cprint=app_log, autoscroll=True, auto_refresh=True, key='-LOG-')
 
 prompt_box = sg.Column([
     [sg.Text('Prompts: (Separated by new line) '), sg.Text('Suffix: '), sg.Input('', key='-SUFFIX-', expand_x=True)],
@@ -1077,6 +1046,8 @@ renderprocess = None
 
 while True:
     event, values = window.read()
+    window['-LOG-'].Update(output_vals)
+    window['-LOG-'].Update(error_vals)
     if event == '-RENDER-':
         if values['-ANIMATION_MODE-'] == 'None':
             args = DeforumArgs(getargs(values, "general"))

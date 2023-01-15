@@ -169,7 +169,7 @@ class DDIMSampler(object):
                                       dynamic_threshold=dynamic_threshold)
             img, pred_x0 = outs
             if callback: callback(i)
-            if img_callback: img_callback(pred_x0, i)
+            if img_callback: img_callback(img, pred_x0, i)
 
             if index % log_every_t == 0 or index == total_steps - 1:
                 intermediates['x_inter'].append(img)
@@ -332,5 +332,5 @@ class DDIMSampler(object):
             x_dec, _ = self.p_sample_ddim(x_dec, cond, ts, index=index, use_original_steps=use_original_steps,
                                           unconditional_guidance_scale=unconditional_guidance_scale,
                                           unconditional_conditioning=unconditional_conditioning)
-            if callback: callback(i)
+            #if callback: callback(i)
         return x_dec
