@@ -289,8 +289,20 @@ def loadanimargs(anim_args, args):
 
 
 def do_render(args):
+    # get box
     prompts = values['-PROMPTS-'].split('\n')
+
+    # remove potential keyframes
     prompts = [x.split(': ', 1)[-1] for x in prompts]
+
+    # clean empty
+    prompts = [x for x in prompts if x]
+    negative_prompts = [x for x in prompts if x.startswith('-')]
+    negative_prompts = [x[1:] for x in negative_prompts]
+    prompts = [x for x in prompts if not x.startswith('-')]
+    prompts_dict = {f'{i}: ': x for i, x in enumerate(prompts)}
+    negative_prompts_dict = {f'{i}: ': x for i, x in enumerate(negative_prompts)}
+
     suffix = values['-SUFFIX-']
     args = loadargs(args)
     set_ready(False)
@@ -299,24 +311,32 @@ def do_render(args):
     if suffix != '':
         prompts = [prompt + ', ' + suffix for prompt in prompts]
     # DISPLAY IMAGE IN deforum/helpers.render.py render_image_batch
-    render_image_batch(args, prompts, root)
+    render_image_batch(root, args, prompts_dict, negative_prompts_dict)
     set_ready(True)
     return
 
 
 def do_video_render(args, anim_args):
     prompts = values['-PROMPTS-'].split('\n')
+    prompts = [x for x in prompts if x]
     for prompt in prompts:
-        if not prompt[0].isdigit():
+        if not prompt.replace('-', '')[0].isdigit():
             print('Please note the keyframes in your animation prompts.')
             set_ready(True)
             return
     suffix = values['-SUFFIX-']
-    prompt_dict = {}
+    prompts_dict = {}
+    negative_prompts_dict = {}
     for prompt in prompts:
-        keyframe = prompt.split(': ')[0]
-        prompt_text = prompt.replace(keyframe, '')
-        prompt_dict[int(keyframe)] = prompt_text + ', ' + suffix
+        if prompt[0] == '-':
+            prompt = prompt.replace(prompt[0], '')
+            keyframe = prompt.split(': ')[0]
+            prompt_text = prompt.split(': ')[1]
+            negative_prompts_dict[int(keyframe)] = prompt_text
+        else:
+            keyframe = prompt.split(': ')[0]
+            prompt_text = prompt.split(': ')[1]
+            prompts_dict[int(keyframe)] = prompt_text + ', ' + suffix
     args = loadargs(args)
     anim_args_result = loadanimargs(anim_args, args)
     anim_args = anim_args_result[0]
@@ -326,11 +346,11 @@ def do_video_render(args, anim_args):
     torch.cuda.empty_cache()  
     match anim_args.animation_mode:
         case '2D' | '3D':
-            render_animation(args, anim_args, prompt_dict, root)
+            render_animation(root, anim_args, args, prompts_dict, negative_prompts_dict)
         case 'Video Input':
-            render_input_video(args, anim_args, prompt_dict, root)
+            render_input_video(root, anim_args, args, prompts_dict, negative_prompts_dict)
         case 'Interpolation':
-            render_interpolation(args, anim_args, prompt_dict, root)
+            render_interpolation(root, anim_args, args, prompts_dict, negative_prompts_dict)
     create_video(args, anim_args)
     if values['-REMOVE_FRAMES_AFTER-']:
         for file in os.listdir(args.outdir):

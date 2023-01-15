@@ -4,6 +4,7 @@ import torchvision.transforms.functional as TF
 from torchvision.utils import make_grid
 import numpy as np
 from IPython import display
+from gui.gui_interface import gui_display_img
 
 #
 # Callback functions
@@ -62,6 +63,7 @@ class SamplerCallback(object):
         grid = make_grid(images, 4).cpu()
         display.clear_output(wait=True)
         display.display(TF.to_pil_image(grid))
+        gui_display_img(TF.to_pil_image(grid))
         return
 
     def view_sample_step(self, latents, path_name_modifier=''):
@@ -119,6 +121,5 @@ class SamplerCallback(object):
             is_masked = torch.logical_and(self.mask >= self.mask_schedule[i], self.mask != 0 )
             new_img = init_noise * torch.where(is_masked,1,0) + img * torch.where(is_masked,0,1)
             img.copy_(new_img)
-
         self.view_sample_step(pred_x0, "x0_pred")
         self.view_sample_step(img, "x")

@@ -1,5 +1,6 @@
 guiwindow = None
 import PySimpleGUI as sg
+from PIL import Image, ImageTk
 
 
 def show_login_popup():
@@ -20,7 +21,10 @@ def show_login_popup():
     window.Close()
 
 # This function shows the image in the gui.
-def gui_display_img(filepath, size=(512, 512)):
+def gui_display_img(filepath=None, size=(512, 512), pil_img=None):
     global guiwindow
+    data = None
+    if pil_img is not None:
+        data = ImageTk.PhotoImage(image=pil_img)
     if guiwindow:
-        guiwindow['-IMAGE-'].update((filepath), size=(512, 512))
+        guiwindow['-IMAGE-'].update((filepath), size=size, data=data)
