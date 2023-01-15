@@ -297,19 +297,21 @@ def do_render(args):
 
     # clean empty
     prompts = [x for x in prompts if x]
+
+    # get negative
     negative_prompts = [x for x in prompts if x.startswith('-')]
     negative_prompts = [x[1:] for x in negative_prompts]
-    prompts = [x for x in prompts if not x.startswith('-')]
-    prompts_dict = {f'{i}: ': x for i, x in enumerate(prompts)}
     negative_prompts_dict = {f'{i}: ': x for i, x in enumerate(negative_prompts)}
 
-    suffix = values['-SUFFIX-']
+    # get positive
+    prompts = [x for x in prompts if not x.startswith('-')]
+    prompts = [prompt + ', ' + values['-SUFFIX-'] for prompt in prompts]
+    prompts_dict = {f'{i}: ': x for i, x in enumerate(prompts)}
+
     args = loadargs(args)
     set_ready(False)
     gc.collect()
     torch.cuda.empty_cache()
-    if suffix != '':
-        prompts = [prompt + ', ' + suffix for prompt in prompts]
     # DISPLAY IMAGE IN deforum/helpers.render.py render_image_batch
     render_image_batch(root, args, prompts_dict, negative_prompts_dict)
     set_ready(True)
@@ -318,16 +320,18 @@ def do_render(args):
 
 def do_video_render(args, anim_args):
     prompts = values['-PROMPTS-'].split('\n')
+    # clear empty
     prompts = [x for x in prompts if x]
+    # check for keyframes
     for prompt in prompts:
         if not prompt.replace('-', '')[0].isdigit():
             print('Please note the keyframes in your animation prompts.')
             set_ready(True)
             return
-    suffix = values['-SUFFIX-']
     prompts_dict = {}
     negative_prompts_dict = {}
     for prompt in prompts:
+        # check for neg before keyframe
         if prompt[0] == '-':
             prompt = prompt.replace(prompt[0], '')
             keyframe = prompt.split(': ')[0]
@@ -336,7 +340,14 @@ def do_video_render(args, anim_args):
         else:
             keyframe = prompt.split(': ')[0]
             prompt_text = prompt.split(': ')[1]
-            prompts_dict[int(keyframe)] = prompt_text + ', ' + suffix
+
+            # check for neg before prompt text
+            if prompt_text[0] == '-':
+                prompt_text = prompt_text.replace(prompt_text[0], '')
+                negative_prompts_dict[int(keyframe)] = prompt_text
+
+            else:  # handle as positive prompt
+                prompts_dict[int(keyframe)] = prompt_text + ', ' + values['-SUFFIX-']
     args = loadargs(args)
     anim_args_result = loadanimargs(anim_args, args)
     anim_args = anim_args_result[0]
