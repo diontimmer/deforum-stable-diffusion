@@ -1,9 +1,12 @@
 import PySimpleGUI as sg
+
+
 import subprocess, time, gc, sys, os, random, torch  # noqa: E401
 from types import SimpleNamespace
 from helpers.save_images import get_output_folder
 import time
 import io
+import re
 import sys
 import trace
 import pickle
@@ -12,9 +15,12 @@ import gui.gui_interface as gui
 from gui.gui_const import *
 from base64 import b64encode
 
-sys.path.extend(['src'])
+# show splash
+splash = sg.Window('Window Title', [[sg.Text('d̷̨̗͎̲̟̤̀͆̿͒͆̈́̕e̵̦̓̍̉́̆͂f̵̨͖͙͉͇͊͑͠o̶̹̤͉̼̹͍͇͋̈́r̴̖̾̂͌̆ū̶̳̟͈͕͌̎͑̒͐̏͜m̶̻̭͎͇͔͎̜͐͒̈̓̽', font=("Calibri", 100))]], transparent_color=sg.theme_background_color(), no_titlebar=True, keep_on_top=True)
+splash.read(timeout=0)
 
-app_log = False
+sys.path.extend(['src'])
+app_log = True
 
 from helpers.render import render_animation, render_input_video, render_image_batch, render_interpolation
 from helpers.model_load import make_linear_decode, load_model, get_model_output_paths
@@ -23,20 +29,6 @@ from helpers.aesthetics import load_aesthetics_model
 # ****************************************************************************
 # *                                  helpers                                 *
 # ****************************************************************************
-
-sys.stdout = io.StringIO()
-sys.stderr = io.StringIO()
-
-# run your script
-
-# get the captured output and error
-output_vals = sys.stdout.getvalue()
-error_vals = sys.stderr.getvalue()
-
-# reset redirect
-sys.stdout = sys.__stdout__
-sys.stderr = sys.__stderr__
-
 
 def Root(modelpath='', model_config_override='', outputpath='outputs'):
     models_path = "models"
@@ -322,8 +314,9 @@ def do_video_render(args, anim_args):
     suffix = values['-SUFFIX-']
     prompt_dict = {}
     for prompt in prompts:
-        key, value = prompt.split(': ')
-        prompt_dict[int(key)] = value + ', ' + suffix
+        keyframe = prompt.split(': ')[0]
+        prompt_text = prompt.replace(keyframe, '')
+        prompt_dict[int(keyframe)] = prompt_text + ', ' + suffix
     args = loadargs(args)
     anim_args_result = loadanimargs(anim_args, args)
     anim_args = anim_args_result[0]
@@ -348,11 +341,10 @@ def do_video_render(args, anim_args):
 
 
 def getmodels():
-    modelvals = []
+    modelvals = list(model_map.keys())
     for file in os.listdir("models"):
-        modelvals.append(file)
-    if 'v1-5-pruned-emaonly.ckpt' not in modelvals:
-        modelvals.append('v1-5-pruned-emaonly.ckpt')
+        if file not in modelvals:
+            modelvals.append(file)
     return modelvals
 
 
@@ -527,6 +519,9 @@ def getargs(values, tab):
 
 
 def set_ready(ready):
+    global show_loading
+    show_loading = not ready
+    window['-LOADINGGIF-'].update(visible=not ready)
     global disabled
     disabled = not ready
     window['-RENDER-'].update(disabled=disabled)
@@ -760,17 +755,20 @@ tab_layout = sg.TabGroup([
 
 menu_def = [['File', ['Open::-OPEN-', 'Save::-SAVE-']]]
 
-log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, reroute_stdout=app_log, reroute_stderr=app_log, reroute_cprint=app_log, autoscroll=True, auto_refresh=True, key='-LOG-')
+log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, reroute_stdout=app_log, autoscroll=True, auto_refresh=True, key='-LOG-')
+
+loading_gif_img = sg.Image(background_color=sg.theme_background_color(), key='-LOADINGGIF-')
 
 prompt_box = sg.Column([
     [sg.Text('Prompts: (Separated by new line) '), sg.Text('Suffix: '), sg.Input('', key='-SUFFIX-', expand_x=True)],
     [sg.Multiline(expand_x=True, expand_y=False, key='-PROMPTS-', size=(0,20))],
     [sg.Text('Output Path: '), sg.Input(f'{os.path.dirname(os.path.abspath(__file__))}\\output', key='-OUTPUT_PATH-', size=(80, 1)), sg.FileBrowse()],
-    [sg.Button('Render', key='-RENDER-'), sg.Button('Reload Model', key='-RELOAD-'), sg.Button('Cancel', key='-CANCEL-')],
+    [sg.Button('Render', key='-RENDER-'), sg.Button('Load Model', key='-RELOAD-'), sg.Button('Cancel', key='-CANCEL-'), loading_gif_img],
     [log_ml],
+    [sg.ProgressBar(100, orientation='h', expand_x=True, key='-PROGRESS-', size=(35,35))],
     ], vertical_alignment='top', expand_x=True, expand_y=True)
 
-
+loading_gif = [sg.DEFAULT_BASE64_LOADING_GIF]
 
 current_image = sg.Column([[
     sg.Image(key='-IMAGE-', size=(768, 768), background_color="#2e3238"), 
@@ -782,7 +780,8 @@ layout = [
     [tab_layout],
     ]
   
-window = sg.Window('d̷̨̗͎̲̟̤̀͆̿͒͆̈́̕e̵̦̓̍̉́̆͂f̵̨͖͙͉͇͊͑͠o̶̹̤͉̼̹͍͇͋̈́r̴̖̾̂͌̆ū̶̳̟͈͕͌̎͑̒͐̏͜m̶̻̭͎͇͔͎̜͐͒̈̓̽', layout, resizable=True, finalize=True, size=(720, 920), font=("Calibri", 11), enable_close_attempted_event=True, icon='gui/favicon.ico')
+window = sg.Window('d̷̨̗͎̲̟̤̀͆̿͒͆̈́̕e̵̦̓̍̉́̆͂f̵̨͖͙͉͇͊͑͠o̶̹̤͉̼̹͍͇͋̈́r̴̖̾̂͌̆ū̶̳̟͈͕͌̎͑̒͐̏͜m̶̻̭͎͇͔͎̜͐͒̈̓̽', layout, resizable=True, finalize=True, size=(1500, 1200), font=("Calibri", 11), enable_close_attempted_event=True, icon='gui/favicon.ico')
+splash.close()
 gui.guiwindow = window
 
 # ****************************************************************************
@@ -1030,24 +1029,26 @@ def create_video(args, anim_args):
 open_file_name = ''
 current_settings = load_settings('saved_settings.pickle')
 if current_settings == {}:
-    initmodel = 'v1-5-pruned-emaonly.ckpt'
-    initconfig = 'v1-inference.yaml'
+    initmodel = 'Protogen_V2.2.ckpt'
+    initconfig = 'v2-inference.yaml'
     window['-BATCH_NAME-'].update(value='Testing')
 else:
     initmodel = current_settings['model']
     initconfig = current_settings['model_config']
 
+window['-RENDER-'].update(disabled=True)
+print('Getting GPU Info...')
 sub_p_res = subprocess.run(['nvidia-smi', '--query-gpu=name,memory.total,memory.free', '--format=csv,noheader'], stdout=subprocess.PIPE).stdout.decode('utf-8')
 print(f"{sub_p_res[:-1]}")
-
-KThread(target=load_root_model, args=(initmodel, initconfig, f'{os.path.dirname(os.path.abspath(__file__))}/output'), daemon=True).start()
+print('Sweet! Please pick your model and load.')
 
 renderprocess = None
+show_loading = False
 
 while True:
-    event, values = window.read()
-    window['-LOG-'].Update(output_vals)
-    window['-LOG-'].Update(error_vals)
+    event, values = window.read(timeout=50)
+    if show_loading:
+        loading_gif_img.update_animation(LOADING_GIF_B64, time_between_frames=50)
     if event == '-RENDER-':
         if values['-ANIMATION_MODE-'] == 'None':
             args = DeforumArgs(getargs(values, "general"))
