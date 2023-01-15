@@ -1,15 +1,17 @@
 import PySimpleGUI as sg
-import random
-import gui.gui_interface as gui
-from gui.gui_layout import *
-from gui.gui_const import *
-from gui.gui_helpers import *
-from gui.gui_settings_helpers import *
-from gui.gui_settings_overrides import DeforumArgs, DeforumAnimArgs
 
 # show splash
 splash = sg.Window('Window Title', [[sg.Text('d̷̨̗͎̲̟̤̀͆̿͒͆̈́̕e̵̦̓̍̉́̆͂f̵̨͖͙͉͇͊͑͠o̶̹̤͉̼̹͍͇͋̈́r̴̖̾̂͌̆ū̶̳̟͈͕͌̎͑̒͐̏͜m̶̻̭͎͇͔͎̜͐͒̈̓̽', font=("Calibri", 100))]], transparent_color=sg.theme_background_color(), no_titlebar=True, keep_on_top=True)
 splash.read(timeout=0)
+
+import random  # noqa: E402
+import gui.gui_interface as gui  # noqa: E402
+from gui.gui_layout import *  # noqa: E402
+from gui.gui_const import *  # noqa: E402
+from gui.gui_helpers import *  # noqa: E402
+from gui.gui_settings_helpers import *  # noqa: E402
+from gui.gui_settings_overrides import DeforumArgs, DeforumAnimArgs  # noqa: E402
+
 
 # inits
 open_file_name = ''
