@@ -1,6 +1,10 @@
-guiwindow = None
 import PySimpleGUI as sg
 from PIL import Image, ImageTk
+import configparser
+
+guiwindow = None
+root = None
+show_loading = False
 
 
 def show_login_popup():
@@ -28,3 +32,25 @@ def gui_display_img(filepath=None, size=(512, 512), pil_img=None):
         data = ImageTk.PhotoImage(image=pil_img)
     if guiwindow:
         guiwindow['-IMAGE-'].update((filepath), size=size, data=data)
+
+
+def set_ready(ready):
+    global show_loading
+    show_loading = not ready
+    guiwindow['-LOADINGGIF-'].update(visible=not ready)
+    disabled = not ready
+    guiwindow['-RENDER-'].update(disabled=disabled)
+    guiwindow['-MODEL-'].update(disabled=disabled)
+    guiwindow['-MODEL_CONFIG-'].update(disabled=disabled)
+    if disabled:
+        guiwindow['-MENUBAR-'].update(menu_definition=[['!File', ['Open::-OPEN-', 'Save::-SAVE-']]])
+    else:
+        print('READY!')
+        guiwindow['-MENUBAR-'].update(menu_definition=[['File', ['Open::-OPEN-', 'Save::-SAVE-']]])
+
+
+# gets value from config
+def get_config_value(key):
+    config = configparser.ConfigParser()
+    config.read('gui/gui_config.ini')
+    return config.get('settings', f'{key}')
