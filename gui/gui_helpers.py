@@ -69,7 +69,7 @@ def do_render(values, args):
     gc.collect()
     torch.cuda.empty_cache()
     # DISPLAY IMAGE IN deforum/helpers.render.py render_image_batch
-    print('Rendering batch images..')
+    gui.gui_print('Rendering batch images, verbose will be in the external console window.', color='yellow')
     sys.stderr = gui.reroute_stderr
     render_image_batch(gui.root, args, prompts_dict, negative_prompts_dict)
     sys.stderr = sys.__stderr__
@@ -85,7 +85,7 @@ def do_video_render(values, args, anim_args):
     # check for keyframes
     for prompt in prompts:
         if not prompt.replace('-', '')[0].isdigit():
-            print('Please note the keyframes in your animation prompts.')
+            gui.gui_print('Please note the keyframes in your animation prompts.', color='red')
             gui.set_ready(True)
             return
     prompts_dict = {}
@@ -115,7 +115,7 @@ def do_video_render(values, args, anim_args):
     gui.set_ready(False)
     gc.collect()
     torch.cuda.empty_cache()
-    print('Rendering animation..')
+    gui.gui_print('Rendering animation, verbose will be in the external console window.', text_color='yellow')
     sys.stderr = gui.reroute_stderr
     match anim_args.animation_mode:
         case '2D' | '3D':
@@ -125,7 +125,7 @@ def do_video_render(values, args, anim_args):
         case 'Interpolation':
             render_interpolation(gui.root, anim_args, args, prompts_dict, negative_prompts_dict)
     sys.stderr = sys.__stderr__
-    create_video(args, anim_args, values["-FPS-"])
+    create_video(args, anim_args, values["-FPS-"], values["-MAKE_GIF-"])
     gui.clean_err_io()  
     if values['-REMOVE_FRAMES_AFTER-']:
         for file in os.listdir(args.outdir):
@@ -140,26 +140,31 @@ def load_root_model(modelname, modelconfig, outputpath):
     if gui.root is not None:
         try:
             del gui.root
-            print('Removed root model.')
+            gui.gui_print('Removed root model.', text_color='orange')
         except NameError:
             pass
-    loaded_model_path = f'models/{modelname}'
-    print(f'Loading model {modelname} at {loaded_model_path}...')
-    root = Root(modelpath=loaded_model_path, model_config_override=modelconfig, outputpath=outputpath)
+    model_folder = gui.guiwindow['-MODELS_PATH-'].get()
+    loaded_model_path = f'{model_folder}/{modelname}'
+    gui.gui_print(f'Loading model {modelname} at {loaded_model_path}...', text_color='yellow')
+    root = Root(modelpath=loaded_model_path, model_config_override=modelconfig, outputpath=outputpath, modelpaths=model_folder)
     root = SimpleNamespace(**root)
     root.models_path, root.output_path = get_model_output_paths(root)
-    root.model, root.device = load_model(root, load_on_run_all=True, check_sha256=True)
+    try:
+        root.model, root.device = load_model(root, load_on_run_all=True, check_sha256=True)
+    except RuntimeError:
+        gui.gui_print('Error loading model, did you load the correct config?', text_color='red')
+        gui.set_ready(False, override_loading=False)
+        return
     gui.root = root
     gui.set_ready(True)
     return
 
 
-def create_video(args, anim_args, fps):
+def create_video(args, anim_args, fps, make_gif):
     bitdepth_extension = "exr" if args.bit_depth_output == 32 else "png"
     image_path = os.path.join(args.outdir, f"{args.timestring}_%05d.{bitdepth_extension}")
     mp4_path = os.path.join(args.outdir, f"{args.timestring}.mp4")
     max_frames = str(anim_args.max_frames)
-    print(f"{image_path} -> {mp4_path}")
 
     # make video
     cmd = [
@@ -182,15 +187,15 @@ def create_video(args, anim_args, fps):
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
     if process.returncode != 0:
-        print(stderr)
+        gui.gui_print(stderr)
         raise RuntimeError(stderr)
-    if values['-MAKE_GIF-']:
+    if make_gif:
         gif_path = os.path.splitext(mp4_path)[0]+'.gif'
         cmd_gif = [
             'ffmpeg',
             '-y',
             '-i', mp4_path,
-            '-r', values['-FPS-'],
+            '-r', fps,
             gif_path
         ]
         subprocess.Popen(cmd_gif, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -198,9 +203,13 @@ def create_video(args, anim_args, fps):
 
 def getmodels():
     modelvals = list(model_map.keys())
-    for file in os.listdir("models"):
-        if file not in modelvals:
-            modelvals.append(file)
+    # check if directory is a directory
+    loadedpath = os.path.normpath(gui.guiwindow['-MODELS_PATH-'].get())
+    print(loadedpath)
+    if os.path.isdir(loadedpath):
+        for file in os.listdir(loadedpath):
+            if file not in modelvals and file.endswith('.ckpt'):
+                modelvals.append(file)
     return modelvals
 
 
@@ -402,6 +411,6 @@ def get_args_from_gui(values, tab):
 
 
 def print_gpu():
-    print('Getting GPU Info...')
+    gui.gui_print('Getting GPU Info...', text_color='yellow')
     sub_p_res = subprocess.run(['nvidia-smi', '--query-gpu=name,memory.total,memory.free', '--format=csv,noheader'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-    print(f"{sub_p_res[:-1]}")
+    gui.gui_print(f"{sub_p_res[:-1]}", text_color='lightgreen')

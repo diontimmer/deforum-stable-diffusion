@@ -2,8 +2,9 @@ import PySimpleGUI as sg
 from gui.gui_const import *
 from gui.gui_helpers import *
 import gui.gui_interface as gui
+import os
+import sys
 
-app_log = bool(gui.get_config_value('log_in_app'))
 
 # ****************************************************************************
 # *                               setup window                               *
@@ -13,7 +14,7 @@ sg.theme(gui.get_config_value('theme'))
 
 # GENERAL Options Layout
 opt_gen_1 = sg.Frame(title='Main Options', layout=[
-    [sg.Text('Model: '), sg.Combo(getmodels(), key='-MODEL-', default_value='v1-5-pruned-emaonly.ckpt', enable_events=True)],
+    [sg.Text('Model: '), sg.Combo([], key='-MODEL-', enable_events=True, expand_x=True)],
     [sg.Text('Model Config: '), sg.Combo(getconfigs(), key='-MODEL_CONFIG-', default_value='v1-inference.yaml', enable_events=True)],
     [sg.Text('Batch Name: '), sg.Input('Testing', key='-BATCH_NAME-', size=(20, 1))],    
     [sg.Text('Batch Size: '), sg.Input('1', key='-BATCH_SIZE-', size=(5, 1))],
@@ -226,7 +227,7 @@ tab_layout = sg.TabGroup([
 
 menu_def = [['File', ['Open::-OPEN-', 'Save::-SAVE-']]]
 
-log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, reroute_stdout=app_log, autoscroll=True, auto_refresh=True, key='-LOG-')
+log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, autoscroll=True, auto_refresh=True, key='-LOG-')
 
 loading_gif_img = sg.Image(background_color=sg.theme_background_color(), key='-LOADINGGIF-')
 
@@ -235,14 +236,15 @@ prog_bar = sg.ProgressBar(100, orientation='h', expand_x=True, key='-PROGRESS-',
 prompt_box = sg.Column([
     [sg.Text('Prompts: (Separated by new line) '), sg.Text('Suffix: '), sg.Input('', key='-SUFFIX-', expand_x=True)],
     [sg.Multiline(expand_x=True, expand_y=False, key='-PROMPTS-', size=(0,20))],
-    [sg.Text('Output Path: '), sg.Input(f'{os.path.dirname(os.path.abspath(__file__))}\\output', key='-OUTPUT_PATH-', size=(80, 1)), sg.FileBrowse()],
+    [sg.Text('Models Path: '), sg.Input(f'{os.path.dirname(os.path.realpath(sys.argv[0]))}\\models', key='-MODELS_PATH-', size=(80, 1), enable_events=True, readonly=True, text_color='black', disabled_readonly_background_color=sg.theme_input_background_color()), sg.FolderBrowse()],
+    [sg.Text('Output Path: '), sg.Input(f'{os.path.dirname(os.path.realpath(sys.argv[0]))}\\outputs', key='-OUTPUT_PATH-', size=(80, 1), readonly=True, text_color='black', disabled_readonly_background_color=sg.theme_input_background_color()), sg.FolderBrowse()],
     [sg.Button('Render', key='-RENDER-'), sg.Button('Load Model', key='-RELOAD-'), sg.Button('Cancel', key='-CANCEL-'), loading_gif_img],
     [log_ml],
     [prog_bar],
     ], vertical_alignment='top', expand_x=True, expand_y=True)
 
 current_image = sg.Column([[
-    sg.Image(key='-IMAGE-', size=(768, 768), background_color="#2e3238"), 
+    sg.Image(key='-IMAGE-', size=(512, 512), background_color="#2e3238"), 
     ]], expand_x=False)
 
 gui_layout = [

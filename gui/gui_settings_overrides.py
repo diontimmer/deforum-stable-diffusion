@@ -1,8 +1,8 @@
 import os
 from gui.gui_const import *
 
-def Root(modelpath='', model_config_override='', outputpath='outputs'):
-    models_path = "models"
+def Root(modelpath='', model_config_override='', outputpath='outputs', modelpaths='models'):
+    models_path = modelpaths
     configs_path = "configs"
     output_path = outputpath
     mount_google_drive = False

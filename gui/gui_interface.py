@@ -4,6 +4,7 @@ import configparser
 import io
 
 guiwindow = None
+log_ml = None
 root = None
 show_loading = False
 reroute_stderr = io.StringIO()
@@ -40,10 +41,14 @@ def gui_display_img(filepath=None, size=(512, 512), pil_img=None):
         guiwindow['-IMAGE-'].update((filepath), size=size, data=data)
 
 
-def set_ready(ready):
+def set_ready(ready, override_loading=None):
     global show_loading
-    show_loading = not ready
-    guiwindow['-LOADINGGIF-'].update(visible=not ready)
+    if override_loading is not None:
+        show_loading = override_loading
+        guiwindow['-LOADINGGIF-'].update(visible=override_loading)
+    else:
+        show_loading = not ready
+        guiwindow['-LOADINGGIF-'].update(visible=not ready)
     disabled = not ready
     guiwindow['-RENDER-'].update(disabled=disabled)
     guiwindow['-MODEL-'].update(disabled=disabled)
@@ -51,7 +56,7 @@ def set_ready(ready):
     if disabled:
         guiwindow['-MENUBAR-'].update(menu_definition=[['!File', ['Open::-OPEN-', 'Save::-SAVE-']]])
     else:
-        print('READY!')
+        gui_print('READY!', text_color='lightgreen')
         guiwindow['-MENUBAR-'].update(menu_definition=[['File', ['Open::-OPEN-', 'Save::-SAVE-']]])
 
 
@@ -60,3 +65,6 @@ def get_config_value(key):
     config = configparser.ConfigParser()
     config.read('gui/gui_config.ini')
     return config.get('settings', f'{key}')
+
+def gui_print(text, text_color=None, background_color=None):
+    log_ml.print(text, text_color=text_color, background_color=background_color)

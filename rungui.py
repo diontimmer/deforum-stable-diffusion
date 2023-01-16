@@ -15,11 +15,13 @@ from gui.gui_settings_overrides import DeforumArgs, DeforumAnimArgs  # noqa: E40
 # inits
 open_file_name = ''
 renderprocess = None
+loadrootprocess = None
 
 # show window  
 window = sg.Window('d̷̨̗͎̲̟̤̀͆̿͒͆̈́̕e̵̦̓̍̉́̆͂f̵̨͖͙͉͇͊͑͠o̶̹̤͉̼̹͍͇͋̈́r̴̖̾̂͌̆ū̶̳̟͈͕͌̎͑̒͐̏͜m̶̻̭͎͇͔͎̜͐͒̈̓̽', gui_layout, resizable=True, finalize=True, size=(1500, 1200), font=(gui.get_config_value('font'), gui.get_config_value('font_size')), enable_close_attempted_event=True, icon='gui/favicon.ico')
 splash.close()
 gui.guiwindow = window
+gui.log_ml = log_ml
 
 # load older settings
 load_settings('saved_settings.pickle')
@@ -27,18 +29,23 @@ load_settings('saved_settings.pickle')
 # disable render and check gpu
 window['-RENDER-'].update(disabled=True)
 print_gpu()
-print('Sweet! Please pick your model and load.')
+gui.gui_print('Sweet! Please pick your model and load.')
 prog_bar.update_bar(100)
 
 
 while True:
-    event, values = window.read(timeout=50)
+    event, values = window.read(timeout=10)
+
     # prog bar
     output = gui.reroute_stderr.getvalue()
-    percentage = extract_percentage(output)
-    if percentage is not None:
-        # Update progress bar
-        prog_bar.update_bar(percentage)
+    if output:
+        percentage = extract_percentage(output)
+        if percentage is not None:
+            # Update progress bar
+            prog_bar.update_bar(percentage)
+
+        gui.reroute_stderr.flush()
+
     # refresh loading gif
     if gui.show_loading:
         loading_gif_img.update_animation(LOADING_GIF_B64, time_between_frames=50)
@@ -59,7 +66,8 @@ while True:
 
     # handle load button
     if event == '-RELOAD-':
-        KThread(target=load_root_model, args=(values['-MODEL-'], values['-MODEL_CONFIG-'], values['-OUTPUT_PATH-']), daemon=True).start()
+        loadrootprocess = KThread(target=load_root_model, args=(values['-MODEL-'], values['-MODEL_CONFIG-'], values['-OUTPUT_PATH-']), daemon=True)
+        loadrootprocess.start()
         save_settings(values, 'saved_settings.pickle')
 
     # handle cancel button
@@ -67,7 +75,12 @@ while True:
         if renderprocess is not None:
             renderprocess.kill()
             gui.set_ready(True)
-            print('Process Canceled!')
+            gui.gui_print('Process Canceled!')
+        elif loadrootprocess is not None:
+            loadrootprocess.kill()
+            gui.set_ready(False, override_loading=False)
+            gui.gui_print('Process Canceled!')
+
 
     # pick random seed
     if event == '-RANDOM_SEED-':
@@ -88,6 +101,10 @@ while True:
         else:
             save_file_name = sg.tk.filedialog.asksaveasfilename(filetypes=[("Deforum File", "*.deforum")], defaultextension='.deforum', initialdir=values['-OUTPUT_PATH-'])
         save_settings(values, save_file_name)
+
+    if event == '-MODELS_PATH-':
+        lastmodel = values['-MODEL-']
+        window['-MODEL-'].update(value=lastmodel, values=getmodels())
 
     # handle exit
     if event in (sg.WINDOW_CLOSE_ATTEMPTED_EVENT, 'Exit'):

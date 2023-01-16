@@ -3,6 +3,8 @@ import gui.gui_interface as gui
 import pickle
 from gui.gui_settings_overrides import DeforumArgs, DeforumAnimArgs
 from gui.gui_helpers import *
+import sys
+import os
 
 def save_settings(values, file):
     settings = {}
@@ -12,6 +14,7 @@ def save_settings(values, file):
     settings['suffix'] = values['-SUFFIX-']
     settings['fps'] = values['-FPS-']
     settings['make_gif'] = values['-MAKE_GIF-']
+    settings['models_path'] = values['-MODELS_PATH-']
     settings['output_path'] = values['-OUTPUT_PATH-']
     settings['remove_frames_after'] = values['-REMOVE_FRAMES_AFTER-']
     try:
@@ -21,7 +24,7 @@ def save_settings(values, file):
             pickle.dump(settings, f)
             return
         if file != 'saved_settings.pickle':
-            print(f'Successfully saved to {file}!')
+            gui.gui_print(f'Successfully saved to {file}!')
     except NameError:
         return
 
@@ -31,18 +34,19 @@ def load_settings(file):
         with open(file, 'rb') as f:
             settings = pickle.load(f)
     except FileNotFoundError:
-        gui.guiwindow['-BATCH_NAME-'].update(value='Testing')
+        gui.guiwindow['-MODEL-'].update(value='Protogen_V2.2.ckpt', values=getmodels())
         settings = {}
     if settings != {}:
         #main
         loadedprompts = '\n'.join(settings['prompts'])
+        gui.guiwindow['-MODELS_PATH-'].update(value=settings['models_path'])
+        gui.guiwindow['-OUTPUT_PATH-'].update(value=settings['output_path'])
         gui.guiwindow['-PROMPTS-'].update(value=loadedprompts)
         gui.guiwindow['-SUFFIX-'].update(value=settings['suffix'])
-        gui.guiwindow['-MODEL-'].update(value=settings['model'])
+        gui.guiwindow['-MODEL-'].update(value=settings['model'], values=getmodels())
         gui.guiwindow['-MODEL_CONFIG-'].update(value=settings['model_config'])
         gui.guiwindow['-FPS-'].update(value=settings['fps'])
         gui.guiwindow['-MAKE_GIF-'].update(value=settings['make_gif'])
-        gui.guiwindow['-OUTPUT_PATH-'].update(value=settings['output_path'])
 
         # general
         gui.guiwindow['-WIDTH-'].update(value=settings['args']['W'])
@@ -195,7 +199,7 @@ def load_settings(file):
         gui.guiwindow['-RESUME_TIMESTRING-'].update(value=settings['anim_args']['resume_timestring'])
 
         if file != 'saved_settings.pickle':
-            print(f'Successfully saved to {file}!')
+            gui.gui_print(f'Successfully saved to {file}!')
         return settings
     else:
         return settings
