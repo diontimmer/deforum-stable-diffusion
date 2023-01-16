@@ -66,6 +66,7 @@ def install_requirements():
         "open-clip-torch",
         "torchsde",
         "ninja",
+        "pysimplegui"
     ]
 
     pip_install_packages(common)
