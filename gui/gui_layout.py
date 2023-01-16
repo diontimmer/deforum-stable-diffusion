@@ -227,7 +227,7 @@ tab_layout = sg.TabGroup([
 
 menu_def = [['File', ['Open::-OPEN-', 'Save::-SAVE-']]]
 
-log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, autoscroll=True, auto_refresh=True, key='-LOG-')
+log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, autoscroll=True, auto_refresh=True, key='-LOG-', reroute_cprint=True)
 
 loading_gif_img = sg.Image(background_color=sg.theme_background_color(), key='-LOADINGGIF-')
 

@@ -108,6 +108,8 @@ def do_video_render(values, args, anim_args):
 
             else:  # handle as positive prompt
                 prompts_dict[int(keyframe)] = prompt_text + ', ' + values['-SUFFIX-']
+    if negative_prompts_dict == {}:
+        negative_prompts_dict = {0: ''}
     args = process_args(args)
     anim_args_result = process_anim_args(anim_args, args)
     anim_args = anim_args_result[0]
@@ -145,7 +147,7 @@ def load_root_model(modelname, modelconfig, outputpath):
             pass
     model_folder = gui.guiwindow['-MODELS_PATH-'].get()
     loaded_model_path = f'{model_folder}/{modelname}'
-    gui.gui_print(f'Loading model {modelname} at {loaded_model_path}...', text_color='yellow')
+    gui.gui_print(f'Loading model {modelname} with config {modelconfig}...', text_color='yellow')
     root = Root(modelpath=loaded_model_path, model_config_override=modelconfig, outputpath=outputpath, modelpaths=model_folder)
     root = SimpleNamespace(**root)
     root.models_path, root.output_path = get_model_output_paths(root)
