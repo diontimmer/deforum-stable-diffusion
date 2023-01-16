@@ -69,7 +69,7 @@ def do_render(values, args):
     gc.collect()
     torch.cuda.empty_cache()
     # DISPLAY IMAGE IN deforum/helpers.render.py render_image_batch
-    gui.gui_print('Rendering batch images, verbose will be in the external console window.', color='yellow')
+    gui.gui_print('Rendering batch images, verbose will be in the external console window.', text_color='yellow')
     sys.stderr = gui.reroute_stderr
     render_image_batch(gui.root, args, prompts_dict, negative_prompts_dict)
     sys.stderr = sys.__stderr__
@@ -85,7 +85,7 @@ def do_video_render(values, args, anim_args):
     # check for keyframes
     for prompt in prompts:
         if not prompt.replace('-', '')[0].isdigit():
-            gui.gui_print('Please note the keyframes in your animation prompts.', color='red')
+            gui.gui_print('Please note the keyframes in your animation prompts.', text_color='red')
             gui.set_ready(True)
             return
     prompts_dict = {}
