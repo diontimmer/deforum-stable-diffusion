@@ -12,13 +12,12 @@ from gui.gui_helpers import *  # noqa: E402
 from gui.gui_settings_helpers import *  # noqa: E402
 from gui.gui_settings_overrides import DeforumArgs, DeforumAnimArgs  # noqa: E402
 
-
 # inits
 open_file_name = ''
 renderprocess = None
 
 # show window  
-window = sg.Window('d̷̨̗͎̲̟̤̀͆̿͒͆̈́̕e̵̦̓̍̉́̆͂f̵̨͖͙͉͇͊͑͠o̶̹̤͉̼̹͍͇͋̈́r̴̖̾̂͌̆ū̶̳̟͈͕͌̎͑̒͐̏͜m̶̻̭͎͇͔͎̜͐͒̈̓̽', gui_layout, resizable=True, finalize=True, size=(1500, 1200), font=("Calibri", 11), enable_close_attempted_event=True, icon='gui/favicon.ico')
+window = sg.Window('d̷̨̗͎̲̟̤̀͆̿͒͆̈́̕e̵̦̓̍̉́̆͂f̵̨͖͙͉͇͊͑͠o̶̹̤͉̼̹͍͇͋̈́r̴̖̾̂͌̆ū̶̳̟͈͕͌̎͑̒͐̏͜m̶̻̭͎͇͔͎̜͐͒̈̓̽', gui_layout, resizable=True, finalize=True, size=(1500, 1200), font=(gui.get_config_value('font'), gui.get_config_value('font_size')), enable_close_attempted_event=True, icon='gui/favicon.ico')
 splash.close()
 gui.guiwindow = window
 
@@ -29,11 +28,17 @@ load_settings('saved_settings.pickle')
 window['-RENDER-'].update(disabled=True)
 print_gpu()
 print('Sweet! Please pick your model and load.')
+prog_bar.update_bar(100)
 
 
 while True:
     event, values = window.read(timeout=50)
-
+    # prog bar
+    output = gui.reroute_stderr.getvalue()
+    percentage = extract_percentage(output)
+    if percentage is not None:
+        # Update progress bar
+        prog_bar.update_bar(percentage)
     # refresh loading gif
     if gui.show_loading:
         loading_gif_img.update_animation(LOADING_GIF_B64, time_between_frames=50)

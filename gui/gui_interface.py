@@ -1,11 +1,17 @@
 import PySimpleGUI as sg
 from PIL import Image, ImageTk
 import configparser
+import io
 
 guiwindow = None
 root = None
 show_loading = False
+reroute_stderr = io.StringIO()
 
+
+def clean_err_io():
+    global reroute_stderr
+    reroute_stderr = io.StringIO()
 
 def show_login_popup():
     # Create the layout for the login and token input fields

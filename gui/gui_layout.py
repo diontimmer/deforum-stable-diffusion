@@ -230,13 +230,15 @@ log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, reroute_stdou
 
 loading_gif_img = sg.Image(background_color=sg.theme_background_color(), key='-LOADINGGIF-')
 
+prog_bar = sg.ProgressBar(100, orientation='h', expand_x=True, key='-PROGRESS-', size=(35,35))
+
 prompt_box = sg.Column([
     [sg.Text('Prompts: (Separated by new line) '), sg.Text('Suffix: '), sg.Input('', key='-SUFFIX-', expand_x=True)],
     [sg.Multiline(expand_x=True, expand_y=False, key='-PROMPTS-', size=(0,20))],
     [sg.Text('Output Path: '), sg.Input(f'{os.path.dirname(os.path.abspath(__file__))}\\output', key='-OUTPUT_PATH-', size=(80, 1)), sg.FileBrowse()],
     [sg.Button('Render', key='-RENDER-'), sg.Button('Load Model', key='-RELOAD-'), sg.Button('Cancel', key='-CANCEL-'), loading_gif_img],
     [log_ml],
-    [sg.ProgressBar(100, orientation='h', expand_x=True, key='-PROGRESS-', size=(35,35))],
+    [prog_bar],
     ], vertical_alignment='top', expand_x=True, expand_y=True)
 
 current_image = sg.Column([[

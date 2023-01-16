@@ -11,11 +11,20 @@ import subprocess
 import sys
 import gc
 import torch
+import re
 
 sys.path.extend(['src'])
 from helpers.render import render_animation, render_input_video, render_image_batch, render_interpolation
 from helpers.model_load import load_model, get_model_output_paths
 
+def extract_percentage(output):
+    if output:
+        last_percentage = None
+        for match in re.finditer(r'\d+%', output):
+            last_percentage = int(match.group(0).strip('%'))
+        return last_percentage
+    else:
+        return None
 
 def do_render(values, args):
     negative_prompts = []
@@ -60,7 +69,11 @@ def do_render(values, args):
     gc.collect()
     torch.cuda.empty_cache()
     # DISPLAY IMAGE IN deforum/helpers.render.py render_image_batch
+    print('Rendering batch images..')
+    sys.stderr = gui.reroute_stderr
     render_image_batch(gui.root, args, prompts_dict, negative_prompts_dict)
+    sys.stderr = sys.__stderr__
+    gui.clean_err_io()
     gui.set_ready(True)
     return
 
@@ -101,7 +114,9 @@ def do_video_render(values, args, anim_args):
     args = anim_args_result[1]
     gui.set_ready(False)
     gc.collect()
-    torch.cuda.empty_cache()  
+    torch.cuda.empty_cache()
+    print('Rendering animation..')
+    sys.stderr = gui.reroute_stderr
     match anim_args.animation_mode:
         case '2D' | '3D':
             render_animation(gui.root, anim_args, args, prompts_dict, negative_prompts_dict)
@@ -110,6 +125,8 @@ def do_video_render(values, args, anim_args):
         case 'Interpolation':
             render_interpolation(gui.root, anim_args, args, prompts_dict, negative_prompts_dict)
     create_video(args, anim_args, values["-FPS-"])
+    sys.stderr = sys.__stderr__
+    gui.clean_err_io()  
     if values['-REMOVE_FRAMES_AFTER-']:
         for file in os.listdir(args.outdir):
             if file.endswith(".png"):
