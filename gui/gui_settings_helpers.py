@@ -199,7 +199,7 @@ def load_settings(file):
         gui.guiwindow['-RESUME_TIMESTRING-'].update(value=settings['anim_args']['resume_timestring'])
 
         if file != 'saved_settings.pickle':
-            gui.gui_print(f'Successfully saved to {file}!')
+            gui.gui_print(f'Successfully loaded {file}!')
         return settings
     else:
         return settings
