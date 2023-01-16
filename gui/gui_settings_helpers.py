@@ -14,6 +14,7 @@ def save_settings(values, file, for_user_file=False):
     settings['suffix'] = values['-SUFFIX-']
     settings['fps'] = values['-FPS-']
     settings['make_gif'] = values['-MAKE_GIF-']
+    settings['patrol_cycle'] = values['-PATROL_CYCLE-']
     if not for_user_file:
         settings['models_path'] = values['-MODELS_PATH-']
         settings['output_path'] = values['-OUTPUT_PATH-']
@@ -49,6 +50,7 @@ def load_settings(file, from_user_file=False):
         gui.guiwindow['-MODEL_CONFIG-'].update(value=settings['model_config'])
         gui.guiwindow['-FPS-'].update(value=settings['fps'])
         gui.guiwindow['-MAKE_GIF-'].update(value=settings['make_gif'])
+        gui.guiwindow['-PATROL_CYCLE-'].update(value=settings['patrol_cycle'])
 
         # general
         gui.guiwindow['-WIDTH-'].update(value=settings['args']['W'])

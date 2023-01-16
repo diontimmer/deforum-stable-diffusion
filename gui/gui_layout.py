@@ -125,6 +125,7 @@ opt_anim_1 = sg.Frame(title='General Animation', layout=[
     [sg.Text('Diffusion Cadence: '), sg.Input('1', key='-DIFFUSION_CADENCE-', size=(5, 1))],
     [sg.Text('FPS: '), sg.Input('12', key='-FPS-', size=(5, 1))],
     [sg.Checkbox('Make GIF', key='-MAKE_GIF-', )],
+    [sg.Checkbox('Make Patrol Cycle', key='-PATROL_CYCLE-', )],
     [sg.Checkbox('Resume From Timestring', key='-RESUME_FROM_TIMESTRING-')],
     [sg.Text('Resume Timestring: '), sg.Input('20220829210106', key='-RESUME_TIMESTRING-', size=(20, 1))],
     [sg.Checkbox('Remove Frames After Export', key='-REMOVE_FRAMES_AFTER-', )],
@@ -227,7 +228,7 @@ tab_layout = sg.TabGroup([
 
 menu_def = [['File', ['Open::-OPEN-', 'Save::-SAVE-']]]
 
-log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, autoscroll=True, auto_refresh=True, key='-LOG-', reroute_cprint=True)
+log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, autoscroll=True, auto_refresh=True, key='-LOG-')
 
 loading_gif_img = sg.Image(background_color=sg.theme_background_color(), key='-LOADINGGIF-')
 

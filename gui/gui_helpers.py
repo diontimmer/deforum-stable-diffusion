@@ -12,6 +12,7 @@ import sys
 import gc
 import torch
 import re
+import cv2
 
 sys.path.extend(['src'])
 from helpers.render import render_animation, render_input_video, render_image_batch, render_interpolation
@@ -127,7 +128,7 @@ def do_video_render(values, args, anim_args):
         case 'Interpolation':
             render_interpolation(gui.root, anim_args, args, prompts_dict, negative_prompts_dict)
     sys.stderr = sys.__stderr__
-    create_video(args, anim_args, values["-FPS-"], values["-MAKE_GIF-"])
+    create_video(args, anim_args, values["-FPS-"], values["-MAKE_GIF-"], values['-PATROL_CYCLE-'])
     gui.clean_err_io()  
     if values['-REMOVE_FRAMES_AFTER-']:
         for file in os.listdir(args.outdir):
@@ -162,7 +163,7 @@ def load_root_model(modelname, modelconfig, outputpath):
     return
 
 
-def create_video(args, anim_args, fps, make_gif):
+def create_video(args, anim_args, fps, make_gif, patrol_cycle):
     bitdepth_extension = "exr" if args.bit_depth_output == 32 else "png"
     image_path = os.path.join(args.outdir, f"{args.timestring}_%05d.{bitdepth_extension}")
     mp4_path = os.path.join(args.outdir, f"{args.timestring}.mp4")
@@ -191,7 +192,34 @@ def create_video(args, anim_args, fps, make_gif):
     if process.returncode != 0:
         gui.gui_print(stderr)
         raise RuntimeError(stderr)
+    if patrol_cycle:
+        gui.gui_print('Creating Patrol Cycle..')
+        # Load the video
+        cap = cv2.VideoCapture(mp4_path)
+        # Get the video frames
+        frames = []
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frames.append(frame)
+
+        # Reverse the frames
+        reversed_frames = frames[::-1]
+
+        # Append the original frames to the reversed frames
+        frames = frames + reversed_frames
+        # Create a video writer object
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        out = cv2.VideoWriter(mp4_path, fourcc, float(fps), (args.W, args.H), isColor=True)
+        # Write the frames to the output video
+        for frame in frames:
+            out.write(frame)
+        # Release the video writer and capture objects
+        out.release()
+        cap.release()
     if make_gif:
+        gui.gui_print('Creating GIF..')
         gif_path = os.path.splitext(mp4_path)[0]+'.gif'
         cmd_gif = [
             'ffmpeg',
