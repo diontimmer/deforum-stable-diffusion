@@ -124,8 +124,8 @@ def do_video_render(values, args, anim_args):
             render_input_video(gui.root, anim_args, args, prompts_dict, negative_prompts_dict)
         case 'Interpolation':
             render_interpolation(gui.root, anim_args, args, prompts_dict, negative_prompts_dict)
-    create_video(args, anim_args, values["-FPS-"])
     sys.stderr = sys.__stderr__
+    create_video(args, anim_args, values["-FPS-"])
     gui.clean_err_io()  
     if values['-REMOVE_FRAMES_AFTER-']:
         for file in os.listdir(args.outdir):
@@ -166,7 +166,7 @@ def create_video(args, anim_args, fps):
         'ffmpeg',
         '-y',
         '-vcodec', 'png',
-        '-r', values['-FPS-'],
+        '-r', fps,
         '-start_number', str(0),
         '-i', image_path,
         '-frames:v', max_frames,
