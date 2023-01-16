@@ -92,7 +92,7 @@ while True:
             open_file_name = sg.tk.filedialog.askopenfilename(initialdir=values['-OUTPUT_PATH-'], defaultextension='.deforum')  # show the 'get files' dialog box
         else:
             open_file_name = sg.tk.filedialog.askopenfilename(filetypes=[("Deforum File", "*.deforum")], initialdir=values['-OUTPUT_PATH-'], defaultextension='.deforum')  # show the 'get files' dialog box
-        load_settings(open_file_name)
+        load_settings(open_file_name, from_user_file=True)
 
     # handle save menu button
     if event == 'Save::-SAVE-':
@@ -100,7 +100,7 @@ while True:
             save_file_name = sg.tk.filedialog.asksaveasfilename(defaultextension='.deforum', initialdir=values['-OUTPUT_PATH-'])
         else:
             save_file_name = sg.tk.filedialog.asksaveasfilename(filetypes=[("Deforum File", "*.deforum")], defaultextension='.deforum', initialdir=values['-OUTPUT_PATH-'])
-        save_settings(values, save_file_name)
+        save_settings(values, save_file_name, from_user_file=True)
 
     if event == '-MODELS_PATH-':
         lastmodel = values['-MODEL-']

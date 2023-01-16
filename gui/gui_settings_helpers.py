@@ -6,7 +6,7 @@ from gui.gui_helpers import *
 import sys
 import os
 
-def save_settings(values, file):
+def save_settings(values, file, for_user_file=False):
     settings = {}
     settings['model'] = values['-MODEL-']
     settings['model_config'] = values['-MODEL_CONFIG-']
@@ -14,8 +14,9 @@ def save_settings(values, file):
     settings['suffix'] = values['-SUFFIX-']
     settings['fps'] = values['-FPS-']
     settings['make_gif'] = values['-MAKE_GIF-']
-    settings['models_path'] = values['-MODELS_PATH-']
-    settings['output_path'] = values['-OUTPUT_PATH-']
+    if not for_user_file:
+        settings['models_path'] = values['-MODELS_PATH-']
+        settings['output_path'] = values['-OUTPUT_PATH-']
     settings['remove_frames_after'] = values['-REMOVE_FRAMES_AFTER-']
     try:
         settings['args'] = DeforumArgs(get_args_from_gui(values, "general"))
@@ -29,7 +30,7 @@ def save_settings(values, file):
         return
 
 
-def load_settings(file):
+def load_settings(file, from_user_file=False):
     try:
         with open(file, 'rb') as f:
             settings = pickle.load(f)
@@ -39,8 +40,9 @@ def load_settings(file):
     if settings != {}:
         #main
         loadedprompts = '\n'.join(settings['prompts'])
-        gui.guiwindow['-MODELS_PATH-'].update(value=settings['models_path'])
-        gui.guiwindow['-OUTPUT_PATH-'].update(value=settings['output_path'])
+        if not from_user_file:
+            gui.guiwindow['-MODELS_PATH-'].update(value=settings['models_path'])
+            gui.guiwindow['-OUTPUT_PATH-'].update(value=settings['output_path'])
         gui.guiwindow['-PROMPTS-'].update(value=loadedprompts)
         gui.guiwindow['-SUFFIX-'].update(value=settings['suffix'])
         gui.guiwindow['-MODEL-'].update(value=settings['model'], values=getmodels())
@@ -198,7 +200,7 @@ def load_settings(file):
         gui.guiwindow['-RESUME_FROM_TIMESTRING-'].update(value=settings['anim_args']['resume_from_timestring'])
         gui.guiwindow['-RESUME_TIMESTRING-'].update(value=settings['anim_args']['resume_timestring'])
 
-        if file != 'saved_settings.pickle':
+        if from_user_file:
             gui.gui_print(f'Successfully loaded {file}!')
         return settings
     else:
