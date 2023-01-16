@@ -12,6 +12,7 @@ reroute_stderr = io.StringIO()
 
 def clean_err_io():
     global reroute_stderr
+    reroute_stderr.flush()
     reroute_stderr = io.StringIO()
 
 def show_login_popup():
@@ -49,15 +50,9 @@ def set_ready(ready, override_loading=None):
     else:
         show_loading = not ready
         guiwindow['-LOADINGGIF-'].update(visible=not ready)
-    disabled = not ready
-    guiwindow['-RENDER-'].update(disabled=disabled)
-    guiwindow['-MODEL-'].update(disabled=disabled)
-    guiwindow['-MODEL_CONFIG-'].update(disabled=disabled)
-    if disabled:
-        guiwindow['-MENUBAR-'].update(menu_definition=[['!File', ['Open::-OPEN-', 'Save::-SAVE-']]])
-    else:
+    guiwindow['-RENDER-'].update(disabled=not ready)
+    if ready:
         gui_print('READY!', text_color='lightgreen')
-        guiwindow['-MENUBAR-'].update(menu_definition=[['File', ['Open::-OPEN-', 'Save::-SAVE-']]])
 
 
 # gets value from config

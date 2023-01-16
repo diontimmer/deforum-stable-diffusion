@@ -244,7 +244,7 @@ prompt_box = sg.Column([
     ], vertical_alignment='top', expand_x=True, expand_y=True)
 
 current_image = sg.Column([[
-    sg.Image(key='-IMAGE-', size=(512, 512), background_color="#2e3238"), 
+    sg.Image(key='-IMAGE-', size=(768, 768), background_color="#2e3238"), 
     ]], expand_x=False)
 
 gui_layout = [
