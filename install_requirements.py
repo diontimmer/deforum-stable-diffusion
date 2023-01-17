@@ -9,7 +9,7 @@ def pip_install_packages(packages,extra_index_url=None):
             if extra_index_url is not None:
                 running = subprocess.call(["pip", "install", "-q", package,  "--extra-index-url", extra_index_url], shell=False)
             else:
-                running = subprocess.call(["pip", "install", "-q", package], shell=False)
+                running = subprocess.call(["pip", "install", "-q", package],shell=False)
         except Exception as e:
             print(f"failed to install {package}: {e}")
     return
@@ -29,7 +29,7 @@ def install_requirements():
     ]
 
     extra_index_url = "https://download.pytorch.org/whl/cu117" if os_system == 'Windows' else None
-    pip_install_packages(torch, extra_index_url=extra_index_url)
+    pip_install_packages(torch,extra_index_url=extra_index_url)
 
 
     # List of common packages to install
@@ -66,7 +66,6 @@ def install_requirements():
         "open-clip-torch",
         "torchsde",
         "ninja",
-        "pysimplegui"
     ]
 
     pip_install_packages(common)
