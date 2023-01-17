@@ -27,6 +27,7 @@ def extract_percentage(output):
     else:
         return None
 
+
 def do_render(values, args):
     negative_prompts = []
     prompts = []
@@ -159,6 +160,7 @@ def load_root_model(modelname, modelconfig, outputpath):
         gui.set_ready(False, override_loading=False)
         return
     gui.root = root
+    gui.gui_print('Model successfully loaded!', text_color='lightgreen')
     gui.set_ready(True)
     return
 
@@ -168,6 +170,7 @@ def create_video(args, anim_args, fps, make_gif, patrol_cycle):
     image_path = os.path.join(args.outdir, f"{args.timestring}_%05d.{bitdepth_extension}")
     mp4_path = os.path.join(args.outdir, f"{args.timestring}.mp4")
     max_frames = str(anim_args.max_frames)
+    gui.gui_print(f'Creating video from frames at {mp4_path} with {fps} fps..', text_color='yellow')
 
     # make video
     cmd = [
@@ -193,7 +196,7 @@ def create_video(args, anim_args, fps, make_gif, patrol_cycle):
         gui.gui_print(stderr)
         raise RuntimeError(stderr)
     if patrol_cycle:
-        gui.gui_print('Creating Patrol Cycle..')
+        gui.gui_print('Creating Patrol Cycle..', text_color='yellow')
         # Load the video
         cap = cv2.VideoCapture(mp4_path)
         # Get the video frames
@@ -219,7 +222,7 @@ def create_video(args, anim_args, fps, make_gif, patrol_cycle):
         out.release()
         cap.release()
     if make_gif:
-        gui.gui_print('Creating GIF..')
+        gui.gui_print('Creating GIF..', text_color='yellow')
         gif_path = os.path.splitext(mp4_path)[0]+'.gif'
         cmd_gif = [
             'ffmpeg',
@@ -229,6 +232,7 @@ def create_video(args, anim_args, fps, make_gif, patrol_cycle):
             gif_path
         ]
         subprocess.Popen(cmd_gif, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    gui.gui_print('Video creation complete!', text_color='lightgreen')
 
 
 def getmodels():

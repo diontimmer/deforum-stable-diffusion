@@ -18,7 +18,7 @@ from .animation import DeformAnimKeys, sample_from_cv2, sample_to_cv2, anim_fram
 from .depth import DepthModel
 from .colors import maintain_colors
 from .load_images import prepare_overlay_mask
-from gui.gui_interface import gui_display_img
+import gui.gui_interface as gui
 
 try:
     from numpngw import write_png
@@ -39,7 +39,7 @@ def convert_image_to_8bpc(image, bit_depth_output):
     elif bit_depth_output == 32:
         image = np.clip(image * 256, 0, 255) # Clip values below 0 and above 255 (but those values ARE PRESENT in the EXRs)
         image = Image.fromarray(image.astype('uint8'))
-    gui_display_img(image)
+    gui.gui_display_img(image)
     return image
 
 # This function saves the image to file, depending on bitrate. At 8bpc PIL saves png8 images. At 16bpc, numpngw saves png16 images. At 32 bpc, cv2 saves EXR images (and optionally tifffile saves 32bpc tiffs).
@@ -51,7 +51,7 @@ def save_8_16_or_32bpc_image(image, outdir, filename, bit_depth_output):
         cv2.imwrite(os.path.join(outdir, filename).replace(".png", ".exr"), cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
     else:
         write_png(os.path.join(outdir, filename), image)
-    gui_display_img(os.path.join(outdir, filename))
+    gui.gui_display_img(os.path.join(outdir, filename))
 
 def next_seed(args):
     if args.seed_behavior == 'iter':
@@ -139,12 +139,20 @@ def render_image_batch(root, args, cond_prompts, uncond_prompts):
         print(f"cond_prompt: {args.cond_prompt}")
         print(f"uncond_prompt: {args.uncond_prompt}")
 
+        # gui mirror
+        gui.gui_print(f"Prompt {iprompt+1} of {len(cond_prompts)}")
+        gui.gui_print(f"cond_prompt: {args.cond_prompt}")
+        gui.gui_print(f"uncond_prompt: {args.uncond_prompt}")
+
         all_images = []
 
         for batch_index in range(args.n_batch):
             if clear_between_batches and batch_index % 32 == 0: 
                 display.clear_output(wait=True)            
             print(f"Batch {batch_index+1} of {args.n_batch}")
+
+            # gui mirror
+            gui.gui_print(f"Batch {batch_index+1} of {args.n_batch}", text_color='yellow')
             
             for image in init_array: # iterates the init images
                 args.init_image = image
@@ -286,6 +294,8 @@ def render_animation(root, anim_args, args, cond_prompts, uncond_prompts):
     frame_idx = start_frame
     while frame_idx < anim_args.max_frames:
         print(f"Rendering animation frame {frame_idx} of {anim_args.max_frames}")
+        # gui mirror
+        gui.gui_print(f"Rendering animation frame {frame_idx} of {anim_args.max_frames}", text_color='yellow')
         noise = keys.noise_schedule_series[frame_idx]
         strength = keys.strength_schedule_series[frame_idx]
         contrast = keys.contrast_schedule_series[frame_idx]
@@ -308,6 +318,8 @@ def render_animation(root, anim_args, args, cond_prompts, uncond_prompts):
             for tween_frame_idx in range(tween_frame_start_idx, frame_idx):
                 tween = float(tween_frame_idx - tween_frame_start_idx + 1) / float(frame_idx - tween_frame_start_idx)
                 print(f"  creating in between frame {tween_frame_idx} tween:{tween:0.2f}")
+                # gui mirror
+                gui.gui_print(f"  creating in between frame {tween_frame_idx} tween:{tween:0.2f}", text_color='yellow')
 
                 advance_prev = turbo_prev_image is not None and tween_frame_idx > turbo_prev_frame_idx
                 advance_next = tween_frame_idx > turbo_next_frame_idx
@@ -380,6 +392,8 @@ def render_animation(root, anim_args, args, cond_prompts, uncond_prompts):
                 if anim_args.hybrid_video_use_video_as_mse_image:
                     args.init_mse_image = os.path.join(args.outdir, 'inputframes', f"{frame_idx:05}.jpg")
                     print(f"Using {args.init_mse_image} as init_mse_image")
+                    # gui mirror
+                    gui.gui_print(f"Using {args.init_mse_image} as init_mse_image", text_color='yellow')
 
             # do hybrid video - composites video frame into prev_img (now warped if using motion)
             if anim_args.hybrid_video_composite:
@@ -435,6 +449,11 @@ def render_animation(root, anim_args, args, cond_prompts, uncond_prompts):
         print(f"cond_prompt: {args.cond_prompt}")
         print(f"uncond_prompt: {args.uncond_prompt}")
 
+        # gui mirror
+        gui.gui_print(f"seed: {args.seed}", text_color='orange')
+        gui.gui_print(f"cond_prompt: {args.cond_prompt}")
+        gui.gui_print(f"uncond_prompt: {args.uncond_prompt}")
+
         if not using_vid_init:
             print(f"Angle: {keys.angle_series[frame_idx]} Zoom: {keys.zoom_series[frame_idx]}")
             print(f"Tx: {keys.translation_x_series[frame_idx]} Ty: {keys.translation_y_series[frame_idx]} Tz: {keys.translation_z_series[frame_idx]}")
@@ -444,6 +463,8 @@ def render_animation(root, anim_args, args, cond_prompts, uncond_prompts):
         if using_vid_init:
             init_frame = os.path.join(args.outdir, 'inputframes', f"{frame_idx+1:05}.jpg")            
             print(f"Using video init frame {init_frame}")
+            # gui mirror
+            gui.gui_print(f"Using video init frame {init_frame}", text_color='yellow')
             args.init_image = init_frame
             if anim_args.use_mask_video:
                 mask_frame = os.path.join(args.outdir, 'maskframes', f"{frame_idx+1:05}.jpg")
@@ -488,13 +509,17 @@ def render_input_video(args, anim_args, animation_prompts, root):
     
     # save the video frames from input video
     print(f"Exporting Video Frames (1 every {anim_args.extract_nth_frame}) frames to {video_in_frame_path}...")
+    # gui mirror
+    gui.gui_print(f"Exporting Video Frames (1 every {anim_args.extract_nth_frame}) frames to {video_in_frame_path}...", text_color='yellow')
     vid2frames(anim_args.video_init_path, video_in_frame_path, anim_args.extract_nth_frame, anim_args.overwrite_extracted_frames)
 
     # determine max frames from length of input frames
     anim_args.max_frames = len([f for f in pathlib.Path(video_in_frame_path).glob('*.jpg')])
     args.use_init = True
     print(f"Loading {anim_args.max_frames} input frames from {video_in_frame_path} and saving video frames to {args.outdir}")
-
+    
+    # gui mirror
+    gui.gui_print(f"Loading {anim_args.max_frames} input frames from {video_in_frame_path} and saving video frames to {args.outdir}", text_color='yellow')
     if anim_args.use_mask_video:
         # create a folder for the mask video input frames to live in
         mask_in_frame_path = os.path.join(args.outdir, 'maskframes') 
@@ -502,6 +527,8 @@ def render_input_video(args, anim_args, animation_prompts, root):
 
         # save the video frames from mask video
         print(f"Exporting Video Frames (1 every {anim_args.extract_nth_frame}) frames to {mask_in_frame_path}...")
+        # gui mirror
+        gui.gui_print(f"Exporting Video Frames (1 every {anim_args.extract_nth_frame}) frames to {mask_in_frame_path}...", text_color='yellow')
         vid2frames(anim_args.video_mask_path, mask_in_frame_path, anim_args.extract_nth_frame, anim_args.overwrite_extracted_frames)
         args.use_mask = True
         args.overlay_mask = True
@@ -528,6 +555,8 @@ def render_interpolation(args, anim_args, animation_prompts, root):
     prompts_c_s = [] # cache all the text embeddings
 
     print(f"Preparing for interpolation of the following...")
+    # gui mirror
+    gui.gui_print(f"Preparing for interpolation of the following...", text_color='yellow')
 
     for i, prompt in animation_prompts.items():
         args.prompt = prompt
@@ -549,6 +578,8 @@ def render_interpolation(args, anim_args, animation_prompts, root):
 
     display.clear_output(wait=True)
     print(f"Interpolation start...")
+    # gui mirror
+    gui.gui_print(f"Interpolation start...", text_color='yellow')
 
     frame_idx = 0
 
@@ -557,6 +588,8 @@ def render_interpolation(args, anim_args, animation_prompts, root):
             dist_frames = list(animation_prompts.items())[i+1][0] - list(animation_prompts.items())[i][0]
             if dist_frames <= 0:
                 print("key frames duplicated or reversed. interpolation skipped.")
+                # gui mirror
+                gui.gui_print("key frames duplicated or reversed. interpolation skipped.", text_color='yellow')
                 return
         else:
             for j in range(dist_frames):
@@ -643,11 +676,16 @@ def render_animation_hybrid_video_generation(args, anim_args, root):
         # save the video frames from input video
         print(f"Video to extract: {anim_args.video_init_path}")
         print(f"Extracting video (1 every {anim_args.extract_nth_frame}) frames to {video_in_frame_path}...")
+        # gui mirror
+        gui.gui_print(f"Video to extract: {anim_args.video_init_path}", text_color='yellow')
+        gui.gui_print(f"Extracting video (1 every {anim_args.extract_nth_frame}) frames to {video_in_frame_path}...", text_color='yellow')
         vid2frames(anim_args.video_init_path, video_in_frame_path, anim_args.extract_nth_frame, anim_args.overwrite_extracted_frames)
 
     # determine max frames from length of input frames
     anim_args.max_frames = len([f for f in pathlib.Path(video_in_frame_path).glob('*.jpg')])
     print(f"Using {anim_args.max_frames} input frames from {video_in_frame_path}...")
+    # gui mirror
+    gui.gui_print(f"Using {anim_args.max_frames} input frames from {video_in_frame_path}...", text_color='yellow')
 
     # get sorted list of inputfiles
     inputfiles = sorted(pathlib.Path(video_in_frame_path).glob('*.jpg'))
@@ -658,6 +696,8 @@ def render_animation_hybrid_video_generation(args, anim_args, root):
             args.init_image = str(f)
             args.use_init = True
             print(f"Using init_image from video: {args.init_image}")
+            # gui mirror
+            gui.gui_print(f"Using init_image from video: {args.init_image}", text_color='yellow')
             break
 
     # use first frame as mse_init
@@ -665,6 +705,8 @@ def render_animation_hybrid_video_generation(args, anim_args, root):
         for f in inputfiles:
             args.init_mse_image = str(f)
             print(f"Using {args.init_mse_image} as init_mse_image")
+            # gui mirror
+            gui.gui_print(f"Using {args.init_mse_image} as init_mse_image", text_color='yellow')
             break
     return args, anim_args, inputfiles
 
@@ -841,10 +883,14 @@ def image_transform_optical_flow(img, flow, border_mode=cv2.BORDER_REPLICATE, fl
 def get_matrix_for_hybrid_motion(frame_idx, dimensions, inputfiles, hybrid_video_motion):
     matrix = get_translation_matrix_from_images(str(inputfiles[frame_idx]), str(inputfiles[frame_idx+1]), dimensions, hybrid_video_motion)
     print(f"Calculating {hybrid_video_motion} RANSAC matrix for frames {frame_idx} to {frame_idx+1}")
+    # gui mirror
+    gui.gui_print(f"Calculating {hybrid_video_motion} RANSAC matrix for frames {frame_idx} to {frame_idx+1}", text_color='yellow')
     return matrix
 
 def get_flow_for_hybrid_motion(frame_idx, dimensions, inputfiles, hybrid_frame_path, method, save_flow_visualization=False):
     print(f"Calculating optical flow for frames {frame_idx} to {frame_idx+1}")
+    # gui mirror
+    gui.gui_print(f"Calculating optical flow for frames {frame_idx} to {frame_idx+1}", text_color='yellow')
     flow = get_flow_from_images(str(inputfiles[frame_idx]), str(inputfiles[frame_idx+1]), dimensions, method)
     if save_flow_visualization:
         flow_img_file = os.path.join(hybrid_frame_path, f"flow{frame_idx:05}.jpg")
@@ -855,6 +901,8 @@ def get_flow_for_hybrid_motion(frame_idx, dimensions, inputfiles, hybrid_frame_p
         flow_PIL = Image.fromarray(np.uint8(flow_cv2))
         flow_PIL.save(flow_img_file)
         print(f"Saved optical flow visualization: {flow_img_file}")
+        # gui mirror
+        gui.gui_print(f"Saved optical flow visualization: {flow_img_file}", text_color='yellow')
     return flow
 
 def draw_flow_lines_in_grid_in_color(img, flow, step=8, magnitude_multiplier=1, min_magnitude = 1, max_magnitude = 100):
