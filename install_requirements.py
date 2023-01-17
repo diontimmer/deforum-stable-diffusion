@@ -9,7 +9,7 @@ def pip_install_packages(packages,extra_index_url=None):
             if extra_index_url is not None:
                 running = subprocess.call(["pip", "install", "-q", package,  "--extra-index-url", extra_index_url], shell=False)
             else:
-                running = subprocess.call(["pip", "install", "-q", package],shell=False)
+                running = subprocess.call(["pip", "install", "-q", package], shell=False)
         except Exception as e:
             print(f"failed to install {package}: {e}")
     return
@@ -29,7 +29,7 @@ def install_requirements():
     ]
 
     extra_index_url = "https://download.pytorch.org/whl/cu117" if os_system == 'Windows' else None
-    pip_install_packages(torch,extra_index_url=extra_index_url)
+    pip_install_packages(torch, extra_index_url=extra_index_url)
 
 
     # List of common packages to install
@@ -79,7 +79,7 @@ def install_requirements():
     ]
 
     windows_xformers = [
-        "https://huggingface.co/deforum/xformers/blob/main/windows/xformers-0.0.15.dev0fd21b40.d20230107-cp310-cp310-win_amd64.whl",
+        "https://huggingface.co/deforum/xformers/resolve/main/windows/xformers-0.0.15.dev0fd21b40.d20230107-cp310-cp310-win_amd64.whl",
     ]
 
     xformers = windows_xformers if os_system == 'Windows' else linux_xformers
