@@ -214,7 +214,8 @@ def create_video(args, anim_args, fps, make_gif, patrol_cycle):
         frames = frames + reversed_frames
         # Create a video writer object
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        out = cv2.VideoWriter(mp4_path.replace('.mp4', '_patrol_cycle.mp4'), fourcc, float(fps), (args.W, args.H), isColor=True)
+        patrol_cycle_path = mp4_path.replace('.mp4', '_patrol_cycle.mp4')
+        out = cv2.VideoWriter(patrol_cycle_path, fourcc, float(fps), (args.W, args.H), isColor=True)
         # Write the frames to the output video
         for frame in frames:
             out.write(frame)
@@ -222,17 +223,24 @@ def create_video(args, anim_args, fps, make_gif, patrol_cycle):
         out.release()
         cap.release()
     if make_gif:
-        gui.gui_print('Creating GIF..', text_color='yellow')
-        gif_path = os.path.splitext(mp4_path)[0]+'.gif'
-        cmd_gif = [
-            'ffmpeg',
-            '-y',
-            '-i', mp4_path,
-            '-r', fps,
-            gif_path
-        ]
-        subprocess.Popen(cmd_gif, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        gui.gui_print('Creating GIF...', text_color='yellow')
+        create_gif(mp4_path)
+        if patrol_cycle:
+            create_gif(patrol_cycle)
+
     gui.gui_print('Video creation complete!', text_color='lightgreen')
+
+
+def create_gif(mp4_path):
+    gif_path = os.path.splitext(mp4_path)[0]+'.gif'
+    cmd_gif = [
+        'ffmpeg',
+        '-y',
+        '-i', mp4_path,
+        '-r', fps,
+        gif_path
+    ]
+    subprocess.Popen(cmd_gif, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 def getmodels():
