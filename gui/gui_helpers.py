@@ -211,7 +211,7 @@ def create_video(args, anim_args, fps, make_gif, patrol_cycle):
         frames = frames + reversed_frames
         # Create a video writer object
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        out = cv2.VideoWriter(mp4_path, fourcc, float(fps), (args.W, args.H), isColor=True)
+        out = cv2.VideoWriter(mp4_path.replace('.mp4', '_patrol_cycle.mp4'), fourcc, float(fps), (args.W, args.H), isColor=True)
         # Write the frames to the output video
         for frame in frames:
             out.write(frame)
