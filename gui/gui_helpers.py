@@ -235,7 +235,6 @@ def getmodels():
     modelvals = list(model_map.keys())
     # check if directory is a directory
     loadedpath = os.path.normpath(gui.guiwindow['-MODELS_PATH-'].get())
-    print(loadedpath)
     if os.path.isdir(loadedpath):
         for file in os.listdir(loadedpath):
             if file not in modelvals and file.endswith('.ckpt'):
