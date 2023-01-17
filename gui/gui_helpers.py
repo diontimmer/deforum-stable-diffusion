@@ -4,19 +4,32 @@ from helpers.save_images import get_output_folder
 from types import SimpleNamespace
 from gui.gui_settings_overrides import Root
 from helpers.aesthetics import load_aesthetics_model
+import cv2
+from PIL import Image
+import shutil
 import time
 import random
 import os
 import subprocess
+import platform
 import sys
 import gc
 import torch
 import re
-import cv2
+import pkg_resources
 
 sys.path.extend(['src'])
 from helpers.render import render_animation, render_input_video, render_image_batch, render_interpolation
 from helpers.model_load import load_model, get_model_output_paths
+
+
+def is_module_installed(module_name: str) -> bool:
+    try:
+        pkg_resources.get_distribution(module_name)
+        return True
+    except pkg_resources.DistributionNotFound:
+        return False
+
 
 def extract_percentage(output):
     if output:
@@ -165,40 +178,57 @@ def load_root_model(modelname, modelconfig, outputpath):
     return
 
 
+# def create_video(args, anim_args, fps, make_gif, patrol_cycle):
+#     bitdepth_extension = "exr" if args.bit_depth_output == 32 else "png"
+#     image_path = os.path.join(args.outdir, f"{args.timestring}_%05d.{bitdepth_extension}")
+#     mp4_path = os.path.join(args.outdir, f"{args.timestring}.mp4")
+#     max_frames = str(anim_args.max_frames)
+#     gui.gui_print(f'Creating video from frames at {mp4_path} with {fps} fps..', text_color='yellow')
+
+#     # make video
+#     cmd = [
+#         'ffmpeg',
+#         '-y',
+#         '-vcodec', 'png',
+#         '-r', fps,
+#         '-start_number', str(0),
+#         '-i', image_path,
+#         '-frames:v', max_frames,
+#         '-c:v', 'libx264',
+#         '-vf',
+#         f'fps={fps}',
+#         '-pix_fmt', 'yuv420p',
+#         '-crf', '17',
+#         '-preset', 'veryfast',
+#         '-pattern_type', 'sequence',
+#         mp4_path
+#     ]
+#     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#     stdout, stderr = process.communicate()
+#     if process.returncode != 0:
+#         gui.gui_print(stderr)
+#         raise RuntimeError(stderr)
 def create_video(args, anim_args, fps, make_gif, patrol_cycle):
     bitdepth_extension = "exr" if args.bit_depth_output == 32 else "png"
-    image_path = os.path.join(args.outdir, f"{args.timestring}_%05d.{bitdepth_extension}")
-    mp4_path = os.path.join(args.outdir, f"{args.timestring}.mp4")
-    max_frames = str(anim_args.max_frames)
-    gui.gui_print(f'Creating video from frames at {mp4_path} with {fps} fps..', text_color='yellow')
+    video_path = os.path.join(args.outdir, f"{args.timestring}.mp4")
+    max_frames = anim_args.max_frames
+    gui.gui_print(f'Creating video from frames at {video_path} with {fps} fps..')
 
-    # make video
-    cmd = [
-        'ffmpeg',
-        '-y',
-        '-vcodec', 'png',
-        '-r', fps,
-        '-start_number', str(0),
-        '-i', image_path,
-        '-frames:v', max_frames,
-        '-c:v', 'libx264',
-        '-vf',
-        f'fps={fps}',
-        '-pix_fmt', 'yuv420p',
-        '-crf', '17',
-        '-preset', 'veryfast',
-        '-pattern_type', 'sequence',
-        mp4_path
-    ]
-    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = process.communicate()
-    if process.returncode != 0:
-        gui.gui_print(stderr)
-        raise RuntimeError(stderr)
+    # Define the codec and create a VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(video_path, fourcc, float(fps), (args.W, args.H), isColor=True)
+
+    for i in range(max_frames):
+        img_path = os.path.join(args.outdir, f"{args.timestring}_{i:05d}.{bitdepth_extension}")
+        img = cv2.imread(img_path)
+        out.write(img)
+
+    out.release()
+
     if patrol_cycle:
         gui.gui_print('Creating Patrol Cycle..', text_color='yellow')
         # Load the video
-        cap = cv2.VideoCapture(mp4_path)
+        cap = cv2.VideoCapture(video_path)
         # Get the video frames
         frames = []
         while True:
@@ -214,7 +244,7 @@ def create_video(args, anim_args, fps, make_gif, patrol_cycle):
         frames = frames + reversed_frames
         # Create a video writer object
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        patrol_cycle_path = mp4_path.replace('.mp4', '_patrol_cycle.mp4')
+        patrol_cycle_path = video_path.replace('.mp4', '_patrol_cycle.mp4')
         out = cv2.VideoWriter(patrol_cycle_path, fourcc, float(fps), (args.W, args.H), isColor=True)
         # Write the frames to the output video
         for frame in frames:
@@ -224,23 +254,27 @@ def create_video(args, anim_args, fps, make_gif, patrol_cycle):
         cap.release()
     if make_gif:
         gui.gui_print('Creating GIF...', text_color='yellow')
-        create_gif(mp4_path)
+        create_gif(video_path, fps)
         if patrol_cycle:
-            create_gif(patrol_cycle)
+            create_gif(patrol_cycle_path, fps)
 
     gui.gui_print('Video creation complete!', text_color='lightgreen')
 
-
-def create_gif(mp4_path):
+def create_gif(mp4_path, fps):
     gif_path = os.path.splitext(mp4_path)[0]+'.gif'
-    cmd_gif = [
-        'ffmpeg',
-        '-y',
-        '-i', mp4_path,
-        '-r', fps,
-        gif_path
-    ]
-    subprocess.Popen(cmd_gif, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    gui.gui_print(f'Creating gif from {mp4_path} at {gif_path}', text_color='yellow')
+    cap = cv2.VideoCapture(mp4_path)
+    frames = []
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frames.append(frame)
+    cap.release()
+    gif_frames = []
+    for frame in frames:
+        gif_frames.append(Image.fromarray(frame))
+    gif_frames[0].save(gif_path, save_all=True, append_images=gif_frames[1:], optimize=True, duration=int(1000/float(fps)), loop=0)
 
 
 def getmodels():
@@ -455,3 +489,32 @@ def print_gpu():
     gui.gui_print('Getting GPU Info...', text_color='yellow')
     sub_p_res = subprocess.run(['nvidia-smi', '--query-gpu=name,memory.total,memory.free', '--format=csv,noheader'], stdout=subprocess.PIPE).stdout.decode('utf-8')
     gui.gui_print(f"{sub_p_res[:-1]}", text_color='lightgreen')
+    if is_module_installed('xformers'):
+        gui.gui_print('Running with xformers.', text_color='lightgreen')
+    else:
+        gui.gui_print('Running without xformers.', text_color='red')
+
+
+def clean_batch_folder(values):
+    folder_path = get_output_folder(values['-OUTPUT_PATH-'], values['-BATCH_NAME-'])
+    # check if folder is valid directory, if so delete the contents
+    if os.path.isdir(folder_path):
+        shutil.rmtree(folder_path)
+        os.makedirs(folder_path)
+    else:
+        os.makedirs(folder_path)
+    gui.gui_print(f"Cleaned up batch folder at {folder_path}", text_color='orange')
+
+
+def open_batch_folder(values):
+    folder_path = get_output_folder(values['-OUTPUT_PATH-'], values['-BATCH_NAME-'])
+    if not os.path.isdir(folder_path):
+        os.makedirs(folder_path)
+    if platform.system() == "Windows":
+        subprocess.run(f'explorer {folder_path}')
+    elif platform.system() == "Linux":
+        subprocess.run(f'xdg-open {folder_path}', shell=True)
+    elif platform.system() == "Darwin":
+        subprocess.run(f'open {folder_path}', shell=True)
+    else:
+        print(f"Opening folder is not supported on {platform.system()}")

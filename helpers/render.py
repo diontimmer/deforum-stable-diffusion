@@ -39,7 +39,7 @@ def convert_image_to_8bpc(image, bit_depth_output):
     elif bit_depth_output == 32:
         image = np.clip(image * 256, 0, 255) # Clip values below 0 and above 255 (but those values ARE PRESENT in the EXRs)
         image = Image.fromarray(image.astype('uint8'))
-    gui.gui_display_img(image)
+    gui.gui_display_img(pil_img=image)
     return image
 
 # This function saves the image to file, depending on bitrate. At 8bpc PIL saves png8 images. At 16bpc, numpngw saves png16 images. At 32 bpc, cv2 saves EXR images (and optionally tifffile saves 32bpc tiffs).
@@ -51,7 +51,7 @@ def save_8_16_or_32bpc_image(image, outdir, filename, bit_depth_output):
         cv2.imwrite(os.path.join(outdir, filename).replace(".png", ".exr"), cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
     else:
         write_png(os.path.join(outdir, filename), image)
-    gui.gui_display_img(os.path.join(outdir, filename))
+    gui.gui_display_img(filepath=os.path.join(outdir, filename))
 
 def next_seed(args):
     if args.seed_behavior == 'iter':
@@ -140,9 +140,7 @@ def render_image_batch(root, args, cond_prompts, uncond_prompts):
         print(f"uncond_prompt: {args.uncond_prompt}")
 
         # gui mirror
-        gui.gui_print(f"Prompt {iprompt+1} of {len(cond_prompts)}")
-        gui.gui_print(f"cond_prompt: {args.cond_prompt}")
-        gui.gui_print(f"uncond_prompt: {args.uncond_prompt}")
+        gui.gui_print(f"Prompt {iprompt+1} of {len(cond_prompts)}\ncond_prompt: {args.cond_prompt}\nuncond_prompt: {args.uncond_prompt}")
 
         all_images = []
 
@@ -451,8 +449,7 @@ def render_animation(root, anim_args, args, cond_prompts, uncond_prompts):
 
         # gui mirror
         gui.gui_print(f"seed: {args.seed}", text_color='orange')
-        gui.gui_print(f"cond_prompt: {args.cond_prompt}")
-        gui.gui_print(f"uncond_prompt: {args.uncond_prompt}")
+        gui.gui_print(f"cond_prompt: {args.cond_prompt}\nuncond_prompt: {args.uncond_prompt}")
 
         if not using_vid_init:
             print(f"Angle: {keys.angle_series[frame_idx]} Zoom: {keys.zoom_series[frame_idx]}")

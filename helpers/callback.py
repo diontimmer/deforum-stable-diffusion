@@ -63,7 +63,7 @@ class SamplerCallback(object):
         grid = make_grid(images, 4).cpu()
         display.clear_output(wait=True)
         display.display(TF.to_pil_image(grid))
-        gui_display_img(TF.to_pil_image(grid))
+        gui_display_img(pil_img=TF.to_pil_image(grid))
         return
 
     def view_sample_step(self, latents, path_name_modifier=''):

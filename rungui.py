@@ -5,6 +5,7 @@ splash = sg.Window('Window Title', [[sg.Text('d̷̨̗͎̲̟̤̀͆̿͒͆̈́̕e̵̓
 splash.read(timeout=0)
 
 import random  # noqa: E402
+import webbrowser # noqa: E402
 import gui.gui_interface as gui  # noqa: E402
 from gui.gui_layout import *  # noqa: E402
 from gui.gui_const import *  # noqa: E402
@@ -100,7 +101,21 @@ while True:
             save_file_name = sg.tk.filedialog.asksaveasfilename(defaultextension='.deforum', initialdir=values['-OUTPUT_PATH-'])
         else:
             save_file_name = sg.tk.filedialog.asksaveasfilename(filetypes=[("Deforum File", "*.deforum")], defaultextension='.deforum', initialdir=values['-OUTPUT_PATH-'])
-        save_settings(values, save_file_name, from_user_file=True)
+        save_settings(values, save_file_name, for_user_file=True)
+
+    # handle open batch
+    if event == 'Open Batch Folder::-OPEN_BATCH-':
+        open_batch_folder(values)
+
+    # handle clean button
+    if event == 'Clean Batch Folder::-CLEAN-':
+        clean_batch_folder(values)
+
+    if event == 'Audio Keyframe Generator::-AUDIO_KEYFRAME_TOOL-':
+        webbrowser.open('https://www.chigozie.co.uk/audio-keyframe-generator/')
+
+    if event == 'Graph Keyframe Generator::-GRAPH_KEYFRAME_TOOL-':
+        webbrowser.open('https://www.chigozie.co.uk/keyframe-string-generator/')
 
     if event == '-MODELS_PATH-':
         lastmodel = values['-MODEL-']

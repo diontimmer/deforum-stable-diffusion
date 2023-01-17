@@ -33,13 +33,19 @@ def show_login_popup():
     window.Close()
 
 # This function shows the image in the gui.
-def gui_display_img(filepath=None, size=(512, 512), pil_img=None):
+def gui_display_img(filepath=None, pil_img=None):
     global guiwindow
-    data = None
     if pil_img is not None:
+        data = None
+        width, height = pil_img.size
+        size = (width, height)
         data = ImageTk.PhotoImage(image=pil_img)
-    if guiwindow:
-        guiwindow['-IMAGE-'].update((filepath), size=size, data=data)
+        guiwindow['-IMAGE-'].update(size=size, data=data)
+    elif filepath is not None:
+        # get size of image at filepath
+        width, height = Image.open(filepath).size
+        size = (width, height)
+        guiwindow['-IMAGE-'].update((filepath), size=size)
 
 
 def set_ready(ready, override_loading=None):

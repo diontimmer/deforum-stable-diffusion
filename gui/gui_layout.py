@@ -226,7 +226,16 @@ tab_layout = sg.TabGroup([
     [opt_motion_tab]], 
     key='-TABGROUP-', expand_x=True)
 
-menu_def = [['File', ['Open::-OPEN-', 'Save::-SAVE-']]]
+tools_menu = [
+                'Open Batch Folder::-OPEN_BATCH-', 
+                'Clean Batch Folder::-CLEAN-',
+                'Audio Keyframe Generator::-AUDIO_KEYFRAME_TOOL-',
+                'Graph Keyframe Generator::-GRAPH_KEYFRAME_TOOL-',
+                ]
+
+menu_def = [['File', ['Open::-OPEN-', 'Save::-SAVE-']], ['Tools', tools_menu]]
+
+
 
 log_ml = sg.Multiline(disabled=True, expand_x=True, expand_y=True, autoscroll=True, auto_refresh=True, key='-LOG-')
 
